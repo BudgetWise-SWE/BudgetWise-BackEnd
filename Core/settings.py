@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import dj_database_url
+from urllib.parse import quote
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -82,7 +83,8 @@ WSGI_APPLICATION = 'Core.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:[YV%HHy5UR+rhAd/]@db.fmxnsuepqpqjyadfjsav.supabase.co:5432/postgres'
+        default=f'postgresql://postgres.fmxnsuepqpqjyadfjsav:BudgetWise2026Secure@aws-1-eu-central-1.pooler.supabase.com:5432/postgres',
+        conn_max_age=600
     )
 }
 
