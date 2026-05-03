@@ -10,9 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
+import os
+from dotenv import load_dotenv
+from pathlib import Path, include
 import dj_database_url
-from urllib.parse import quote
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -89,10 +91,11 @@ WSGI_APPLICATION = 'Core.wsgi.application'
 #     }
 # }
 
+load_dotenv(dotenv_path='.myenv')
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=f'postgresql://postgres.fmxnsuepqpqjyadfjsav:BudgetWise2026Secure@aws-1-eu-central-1.pooler.supabase.com:5432/postgres',
-        conn_max_age=600
+        default=os.getenv('DATABASE_URL')
     )
 }
 
