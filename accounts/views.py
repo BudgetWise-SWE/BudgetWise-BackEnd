@@ -1,36 +1,54 @@
-from django.contrib.auth import logout
+from django.contrib.auth import logout, authenticate, login
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.contrib.auth import authenticate, login
-from .models import *
-from accounts.serializers import *
+from .models import User
+from accounts.serializers import UserSerializer, UserUpdateSerializer
+
 
 class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-   queryset = User.objects.all()
-   serializer_class = UserSerializer
-   permission_classes = [permissions.AllowAny]
-   
-   def perform_create(self, serializer):
-      User.objects.create_user(**serializer.validated_data)
-   
-   @action(detail=False, methods=['post'])
-   def login(self ,request) :
-      email = request.data.get('email')
-      password = request.data.get('password')
-      
-      user = authenticate(request, username=email, password=password)      
-      if user is not None:
-         login(request, user)
-         return Response ({"message": "Login successful", "user": UserSerializer(user).data}, status= status.HTTP_200_OK)
-      return Response ({"message": "Invlaid credentials"}, status= status.HTTP_401_UNAUTHORIZED)
+    """ViewSet for authentication operations: register, login, logout, profile."""
 
-   @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
-   def logout(self, request):
-      logout(request)
-      return Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
 
-   @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
-   def me(self, request):
-      serializer = self.get_serializer(request.user)
-      return Response(serializer.data)
+    def perform_create(self, serializer):
+        """Register a new user using the custom user manager."""
+        User.objects.create_user(**serializer.validated_data)
+
+    @action(detail=False, methods=['post'])
+    def login(self, request):
+        """Authenticate a user by email and password and start a session."""
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        user = authenticate(request, username=email, password=password)
+        if user is not None:
+            login(request, user)
+            return Response(
+                {'message': 'Login successful', 'user': UserSerializer(user).data},
+                status=status.HTTP_200_OK,
+            )
+        return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def logout(self, request):
+        """End the current user session."""
+        logout(request)
+        return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def me(self, request):
+        """Return the profile data of the currently authenticated user."""
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['patch'], permission_classes=[permissions.IsAuthenticated])
+    def update_profile(self, request):
+        """Partially update the authenticated user's profile (name, currency, language)."""
+        serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
