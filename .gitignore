@@ -6,3 +6,5 @@ db.sqlite3
 supabase/
 .pdf
 .vscode
+cookies.txt
+Core/__pycache__
