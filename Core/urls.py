@@ -21,4 +21,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
     path('finance/', include('finance.urls')),
+    path('analytics/', include('analytics.urls')),
+    path('planning/', include('planning.urls')),
+    path('notifications/', include('notifications.urls')),
+    # API compatibility routes
+    path('api/', include('accounts.urls')),
+    path('api/finance/', include('finance.urls')),
+    path('api/analytics/', include('analytics.urls')),
+    path('api/planning/', include('planning.urls')),
+    path('api/notifications/', include('notifications.urls')),
 ]   

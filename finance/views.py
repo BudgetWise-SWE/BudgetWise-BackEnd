@@ -1,3 +1,6 @@
+"""
+Views for managing financial entities including transactions, budgets, and categories.
+"""
 from django.db.models import Q, Sum
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action

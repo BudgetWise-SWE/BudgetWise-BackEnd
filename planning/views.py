@@ -3,7 +3,7 @@ from .serializers import BudgetCategoryLimitSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import SavingsGoal
+from finance.models import SavingsGoal
 from .serializers import SavingsGoalSerializer
 
 class BudgetLimitView(APIView):

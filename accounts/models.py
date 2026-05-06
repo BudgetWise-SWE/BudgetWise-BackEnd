@@ -5,6 +5,10 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 class UserManager(BaseUserManager):
     """Custom manager for the User model where email is the unique identifier."""
     
+    """
+    Custom manager for the User model where email is the unique identifier.
+    """
+
     def create_user (self ,email , password=None ,**extra_fields):
         if not email :
             raise ValueError('The Email field must be set')
@@ -19,6 +23,9 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, password=None, **extra_fields):
         """Create an admin user (SuperUser)."""
+        """
+        Create an admin user (SuperUser).
+        """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
@@ -34,6 +41,9 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     """User Model."""
 
+    """
+    Custom User model.
+    """
     username = None
     email = models.EmailField(unique=True, max_length=100)
     first_name = models.CharField(max_length=25)
