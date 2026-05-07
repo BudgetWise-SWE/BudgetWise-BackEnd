@@ -1,3 +1,10 @@
+"""
+Models for the finance application.
+
+Defines core financial entities such as Categories, Transactions,
+Budgets, and Savings Goals. Includes logic for tracking spending
+relative to budget limits.
+"""
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
@@ -6,7 +13,19 @@ from django.utils import timezone
 
 
 class Category(models.Model):
-    """Represents a transaction category (e.g. Food, Salary)."""
+    """
+    Represents a classification for transactions (e.g., Food, Salary, Rent).
+    
+    Categories can be system-predefined or custom-created by users.
+    
+    Attributes:
+        user (ForeignKey): The user who created the category (None for predefined).
+        name (CharField): The display name of the category.
+        type (CharField): Choice of 'expense' or 'income'.
+        is_predefined (BooleanField): True if the category is available to all users.
+        parent (ForeignKey): Optional self-referential link for sub-categories.
+        created_at (DateTimeField): When the category was added.
+    """
 
     TYPE_EXPENSE = 'expense'
     TYPE_INCOME = 'income'
@@ -35,6 +54,7 @@ class Category(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Metadata for the Category model."""
         ordering = ['type', 'name']
         constraints = [
             models.UniqueConstraint(
@@ -44,11 +64,25 @@ class Category(models.Model):
         ]
 
     def __str__(self):
+        """Return the category name."""
         return self.name
 
 
 class Transaction(models.Model):
-    """Represents a financial transaction (income or expense)."""
+    """
+    Represents an individual financial movement (income or expense).
+    
+    Attributes:
+        user (ForeignKey): The user who owns the transaction.
+        type (CharField): Choice of 'expense' or 'income'.
+        category (ForeignKey): The category assigned to the transaction.
+        amount (DecimalField): The monetary value.
+        date (DateField): When the transaction occurred.
+        description (CharField): A brief overview.
+        notes (TextField): Optional detailed commentary.
+        source (CharField): The origin of income (e.g., 'Employer Name').
+        created_at (DateTimeField): Audit timestamp.
+    """
 
     TYPE_EXPENSE = 'expense'
     TYPE_INCOME = 'income'
@@ -78,14 +112,26 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Metadata for the Transaction model."""
         ordering = ['-date', '-created_at']
 
     def __str__(self):
+        """Return a formatted summary of the transaction."""
         return f'{self.type} {self.amount}'
 
 
 class Budget(models.Model):
-    """Represents a monthly budget for a user."""
+    """
+    Defines a user's total spending allowance for a specific month.
+    
+    Attributes:
+        user (ForeignKey): The budget owner.
+        name (CharField): Descriptive name (e.g., 'May 2026 Budget').
+        month (int): 1-12.
+        year (int): YYYY.
+        total_limit (Decimal): The maximum total spending allowed.
+        status (str): Current standing (Active, Exceeded, Completed).
+    """
 
     STATUS_ACTIVE = 'active'
     STATUS_EXCEEDED = 'exceeded'
@@ -110,6 +156,7 @@ class Budget(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Metadata for the Budget model."""
         ordering = ['-year', '-month']
         constraints = [
             models.UniqueConstraint(
@@ -119,11 +166,17 @@ class Budget(models.Model):
         ]
 
     def __str__(self):
+        """Return the budget name and period."""
         return f'{self.name} {self.month}/{self.year}'
 
     @property
     def spent(self):
-        """Return the total amount spent in this budget's month/year period."""
+        """
+        Calculate total expenses for this budget's month and year.
+        
+        Returns:
+            Decimal: Sum of all expenses in the matching period.
+        """
         total = self.user.transactions.filter(
             type=Transaction.TYPE_EXPENSE,
             date__year=self.year,
@@ -132,7 +185,11 @@ class Budget(models.Model):
         return total or 0
 
     def update_status(self):
-        """Recalculate and persist the budget status based on current spending."""
+        """
+        Evaluate and update the budget status based on current spending.
+        
+        Compares total spent against total_limit and persists the status field.
+        """
         spent = self.spent
         if spent > self.total_limit:
             self.status = self.STATUS_EXCEEDED
@@ -144,7 +201,16 @@ class Budget(models.Model):
 
 
 class BudgetCategoryLimit(models.Model):
-    """Represents a spending limit for a specific category within a budget."""
+    """
+    Sets a specific spending cap for a single category within a larger budget.
+    
+    Attributes:
+        budget (ForeignKey): Parent budget.
+        category (ForeignKey): The category to limit.
+        limit (Decimal): The capped amount for this category.
+        spent (Decimal): Running total of expenses in this category.
+        status (str): Standing (Active, Close, Exceeded).
+    """
 
     STATUS_ACTIVE = 'active'
     STATUS_CLOSE = 'close'
@@ -162,6 +228,7 @@ class BudgetCategoryLimit(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
 
     class Meta:
+        """Metadata for the BudgetCategoryLimit model."""
         ordering = ['category__name']
         constraints = [
             models.UniqueConstraint(
@@ -172,11 +239,20 @@ class BudgetCategoryLimit(models.Model):
 
     @property
     def remaining(self):
-        """Return how much of the limit is still available."""
+        """
+        Calculate available funds remaining for this category.
+        
+        Returns:
+            Decimal: Difference between limit and spent.
+        """
         return max(self.limit - self.spent, 0)
 
     def update_status(self):
-        """Recalculate and persist the category limit status."""
+        """
+        Evaluate status based on consumption percentage.
+        
+        'Close' status is triggered at 90% consumption.
+        """
         if self.spent > self.limit:
             self.status = self.STATUS_EXCEEDED
         elif self.spent >= self.limit * Decimal('0.9'):
@@ -186,14 +262,29 @@ class BudgetCategoryLimit(models.Model):
         self.save(update_fields=['status'])
 
     def add_spent(self, amount):
-        """Increment the spent amount and update status accordingly."""
+        """
+        Increase the spent tally and refresh the status.
+        
+        Args:
+            amount (Decimal): Value to add.
+        """
         self.spent += amount
         self.save(update_fields=['spent'])
         self.update_status()
 
 
 class SavingsGoal(models.Model):
-    """Represents a user's savings goal with a target amount and optional deadline."""
+    """
+    Defines a long-term savings target.
+    
+    Attributes:
+        user (ForeignKey): Goal owner.
+        name (CharField): Name of the goal (e.g., 'New Car').
+        target_amount (Decimal): Total money required.
+        current_amount (Decimal): Money saved so far.
+        deadline (DateField): Target date for completion.
+        completed (BooleanField): Completion status.
+    """
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -208,17 +299,28 @@ class SavingsGoal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Metadata for the SavingsGoal model."""
         ordering = ['-created_at']
 
     @property
     def progress(self):
-        """Return the savings progress as a percentage (0-100)."""
+        """
+        Calculate the percentage towards the goal.
+        
+        Returns:
+            int: Progress percentage (0-100).
+        """
         if self.target_amount <= 0:
             return 0
         return min(100, int((self.current_amount / self.target_amount) * 100))
 
     def add_contribution(self, amount):
-        """Add a contribution to the savings goal and mark as completed if target is reached."""
+        """
+        Log a contribution and check for goal completion.
+        
+        Args:
+            amount (Decimal): Contribution value.
+        """
         self.current_amount += amount
         if self.current_amount >= self.target_amount:
             self.completed = True

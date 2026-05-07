@@ -1,3 +1,10 @@
+"""
+Django settings for the BudgetWise project.
+
+This module contains the core configuration for the application, including
+database settings, security middleware, installed apps, and API documentation
+settings via drf-spectacular.
+"""
 import os
 from dotenv import load_dotenv
 from pathlib import Path

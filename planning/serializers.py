@@ -1,3 +1,9 @@
+"""
+Serializers for the planning application.
+
+Handles the logic for setting category spending limits (auto-mapping to the
+current active budget) and calculating savings targets based on deadlines.
+"""
 from datetime import date
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -6,23 +12,50 @@ from django.utils import timezone
 
 
 class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
-    """Serializer for creating a category spending limit for the current month's budget."""
+    """
+    Serializer for establishing a category spending limit for the current month.
+    
+    This serializer is specialized for 'Quick Planning' where the system
+    automatically finds or creates the current month's budget container.
+    """
 
     class Meta:
+        """Metadata for BudgetCategoryLimitSerializer."""
         model = BudgetCategoryLimit
         fields = ['category', 'limit']
 
     def validate_limit(self, value):
-        """Ensure the limit is a positive number."""
+        """
+        Ensure the limit provided is a positive number.
+        
+        Args:
+            value (Decimal): The input limit value.
+            
+        Returns:
+            Decimal: Validated limit.
+            
+        Raises:
+            serializers.ValidationError: If the value is non-positive.
+        """
         if value <= 0:
             raise serializers.ValidationError('Amount must be a positive number.')
         return value
 
     def create(self, validated_data):
         """
-        Create or retrieve the current month's budget for the user,
-        then create the category limit within it.
-        Raises validation error if a limit for this category already exists this month.
+        Link the category limit to the current month's budget.
+        
+        Automatically finds or creates a Budget instance for the current
+        month/year and attaches the new limit to it.
+        
+        Args:
+            validated_data (dict): Validated input data.
+            
+        Returns:
+            BudgetCategoryLimit: Created instance.
+            
+        Raises:
+            serializers.ValidationError: If a limit for the category already exists for the month.
         """
         user = self.context['request'].user
         category = validated_data['category']
@@ -45,12 +78,18 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
 
 
 class SavingsGoalSerializer(serializers.ModelSerializer):
-    """Serializer for savings goals with computed monthly savings needed and progress percentage."""
+    """
+    Serializer for savings goals with advanced planning metrics.
+    
+    Computes 'monthly_savings_needed' based on the distance to the deadline
+    and the remaining target amount.
+    """
 
     monthly_savings_needed = serializers.SerializerMethodField()
     progress_percentage = serializers.SerializerMethodField()
 
     class Meta:
+        """Metadata for SavingsGoalSerializer."""
         model = SavingsGoal
         fields = [
             'id', 'name', 'target_amount', 'current_amount',
@@ -59,7 +98,12 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'current_amount', 'completed']
 
     def get_monthly_savings_needed(self, obj):
-        """Calculate how much the user needs to save per month to reach the goal by the deadline."""
+        """
+        Calculate the required monthly contribution to reach the goal by its deadline.
+        
+        Returns:
+            float: Amount needed per month, or None if no deadline is set.
+        """
         if not obj.deadline:
             return None
         today = date.today()
@@ -70,7 +114,12 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
         return round(remaining / max(months, 1), 2)
 
     def get_progress_percentage(self, obj):
-        """Return the percentage of the target amount that has been saved."""
+        """
+        Calculate the percentage completion of the savings goal.
+        
+        Returns:
+            float: Percentage value rounded to 2 decimal places.
+        """
         if obj.target_amount > 0:
             return round((obj.current_amount / obj.target_amount) * 100, 2)
         return 0

@@ -1,6 +1,12 @@
 """
-Views for managing financial entities: categories, transactions,
-budgets, budget category limits, savings goals, and reports.
+Views for managing financial entities.
+
+Provides comprehensive API endpoints for:
+- Categories (predefined and custom)
+- Transactions (with filtering and summaries)
+- Budgets and per-category spending limits
+- Savings goals with contribution tracking
+- Financial reports (monthly and by category)
 """
 from django.db.models import Q, Sum
 from rest_framework import viewsets, permissions, status
@@ -21,39 +27,78 @@ from decimal import Decimal
 
 
 class OwnerMixin:
-    """Mixin that restricts all queryset access to the authenticated user's own objects."""
+    """
+    Mixin to restrict queryset access to the authenticated user's own data.
+    
+    Ensures that users can only view, update, or delete objects they created.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """Filter queryset to only the objects belonging to the requesting user."""
+        """
+        Filter the base queryset to only include items belonging to the current user.
+        
+        Returns:
+            QuerySet: Filtered queryset.
+        """
         return super().get_queryset().filter(user=self.request.user)
 
 
 class CategoryViewSet(OwnerMixin, viewsets.ModelViewSet):
-    """CRUD operations for transaction categories (predefined + user-created)."""
+    """
+    ViewSet for managing transaction categories.
+    
+    Allows listing all categories (including global predefined ones)
+    and creating/editing custom user-specific categories.
+    """
 
     serializer_class = CategorySerializer
 
     def get_queryset(self):
-        """Return both the user's own categories and all predefined system categories."""
+        """
+        Return user-specific categories combined with system-wide predefined categories.
+        
+        Returns:
+            QuerySet: Categories matching the criteria.
+        """
         return Category.objects.filter(
             Q(user=self.request.user) | Q(is_predefined=True)
         )
 
     def perform_create(self, serializer):
-        """Assign the authenticated user to the new category."""
+        """
+        Assign the authenticated user to newly created categories.
+        
+        Args:
+            serializer (CategorySerializer): The category serializer.
+        """
         serializer.save(user=self.request.user)
 
 
 class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
-    """CRUD operations for transactions with optional filtering."""
+    """
+    ViewSet for logging and viewing financial transactions.
+    
+    Supports filtering by type, category, and date range.
+    """
 
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
 
     def get_queryset(self):
-        """Return the user's transactions with optional filters applied."""
+        """
+        Apply optional filters based on query parameters.
+        
+        Filters:
+        - type: 'expense' or 'income'
+        - category: ID of the category
+        - date_from: Start date (YYYY-MM-DD)
+        - date_to: End date (YYYY-MM-DD)
+        
+        Returns:
+            QuerySet: Filtered transaction list.
+        """
         queryset = super().get_queryset()
         params = self.request.query_params
 
@@ -73,10 +118,23 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
 
         return queryset
 
-    @extend_schema(responses={200: inline_serializer('TransactionSummaryResponse', {'income': serializers.DecimalField(max_digits=14, decimal_places=2), 'expense': serializers.DecimalField(max_digits=14, decimal_places=2), 'balance': serializers.DecimalField(max_digits=14, decimal_places=2)})})
+    @extend_schema(
+        summary="Transaction Summary",
+        description="Calculate total income, expense, and balance for an optional period.",
+        responses={200: inline_serializer('TransactionSummaryResponse', {'income': serializers.DecimalField(max_digits=14, decimal_places=2), 'expense': serializers.DecimalField(max_digits=14, decimal_places=2), 'balance': serializers.DecimalField(max_digits=14, decimal_places=2)})}
+    )
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Return income, expense, and balance totals for an optional month/year period."""
+        """
+        Calculate the aggregate financial balance.
+        
+        Query Parameters:
+            month (int): Filter by month.
+            year (int): Filter by year.
+            
+        Returns:
+            Response: Object containing totals for income, expense, and net balance.
+        """
         queryset = self.get_queryset()
         month = request.query_params.get('month')
         year = request.query_params.get('year')
@@ -96,10 +154,18 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
             'balance': total_income - total_expense,
         })
 
-    @extend_schema(responses={200: inline_serializer('TransactionCategorySummaryResponse', {'category_id': serializers.IntegerField(), 'category_name': serializers.CharField(), 'total': serializers.DecimalField(max_digits=14, decimal_places=2)}, many=True)})
+    @extend_schema(
+        summary="Transactions by Category",
+        description="Return total spending aggregated by category for a period.",
+        responses={200: inline_serializer('TransactionCategorySummaryResponse', {'category_id': serializers.IntegerField(), 'category_name': serializers.CharField(), 'total': serializers.DecimalField(max_digits=14, decimal_places=2)}, many=True)}
+    )
     @action(detail=False, methods=['get'])
     def by_category(self, request):
-        """Return total spending aggregated by category for an optional month/year period."""
+        """
+        Aggregate spending by category.
+        
+        Returns a list of categories and the total amount spent in each.
+        """
         queryset = self.get_queryset().filter(category__isnull=False)
         month = request.query_params.get('month')
         year = request.query_params.get('year')
@@ -123,33 +189,63 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
 
 
 class BudgetViewSet(OwnerMixin, viewsets.ModelViewSet):
-    """CRUD operations for monthly budgets."""
+    """
+    ViewSet for managing overall monthly budgets.
+    
+    Allows setting the total spending limit for a specific month and year.
+    """
 
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
 
 
 class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
-    """CRUD operations for per-category spending limits within a budget."""
+    """
+    ViewSet for managing granular spending limits within a budget.
+    
+    Allows users to assign specific portions of their total budget to individual categories.
+    """
 
     queryset = BudgetCategoryLimit.objects.all()
     serializer_class = BudgetCategoryLimitSerializer
 
     def get_queryset(self):
-        """Filter limits to only those belonging to the authenticated user's budgets."""
+        """
+        Filter limits based on the owner of the parent budget.
+        
+        Returns:
+            QuerySet: Category limits belonging to the user.
+        """
         return BudgetCategoryLimit.objects.filter(budget__user=self.request.user)
 
 
 class SavingsGoalViewSet(OwnerMixin, viewsets.ModelViewSet):
-    """CRUD operations for savings goals with a contribute action."""
+    """
+    ViewSet for managing long-term savings goals.
+    
+    Provides a custom 'contribute' action to add money to a goal.
+    """
 
     queryset = SavingsGoal.objects.all()
     serializer_class = SavingsGoalSerializer
 
-    @extend_schema(request=inline_serializer('ContributeRequest', {'amount': serializers.DecimalField(max_digits=14, decimal_places=2)}), responses=SavingsGoalSerializer)
+    @extend_schema(
+        summary="Contribute to Goal",
+        description="Add a specific amount to the current balance of a savings goal.",
+        request=inline_serializer('ContributeRequest', {'amount': serializers.DecimalField(max_digits=14, decimal_places=2)}), 
+        responses=SavingsGoalSerializer
+    )
     @action(detail=True, methods=['post'])
     def contribute(self, request, pk=None):
-        """Add a contribution amount to a specific savings goal."""
+        """
+        Add funds to a specific savings goal.
+        
+        Expected Data:
+            amount (Decimal): The contribution value.
+            
+        Returns:
+            Response: The updated goal instance.
+        """
         goal = self.get_object()
         amount_raw = request.data.get('amount')
 
@@ -178,27 +274,47 @@ class SavingsGoalViewSet(OwnerMixin, viewsets.ModelViewSet):
 
 
 class ReportViewSet(viewsets.ViewSet):
-    """ViewSet for financial reports — monthly summary and category breakdown."""
+    """
+    ViewSet for high-level financial reports.
+    
+    Provides aggregated analytics about income, expenses, and category distributions.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
     def list(self, request):
-        """Return a hint about the available report sub-endpoints."""
+        """Return basic instructions for using the report endpoints."""
         return Response({'detail': 'Use the monthly or category endpoints to fetch report data.'})
 
-    @extend_schema(responses={200: inline_serializer('ReportMonthlyResponse', {'income': serializers.DecimalField(max_digits=14, decimal_places=2), 'expense': serializers.DecimalField(max_digits=14, decimal_places=2), 'balance': serializers.DecimalField(max_digits=14, decimal_places=2)})})
+    @extend_schema(
+        summary="Monthly Summary Report",
+        responses={200: inline_serializer('ReportMonthlyResponse', {'income': serializers.DecimalField(max_digits=14, decimal_places=2), 'expense': serializers.DecimalField(max_digits=14, decimal_places=2), 'balance': serializers.DecimalField(max_digits=14, decimal_places=2)})}
+    )
     @action(detail=False, methods=['get'])
     def monthly(self, request):
-        """Return monthly income, expense, and balance summary."""
+        """
+        Generate a monthly financial summary.
+        
+        Returns:
+            Response: Aggregated monthly data (Income, Expense, Balance).
+        """
         month = request.query_params.get('month')
         year = request.query_params.get('year')
         data = ReportService().monthly_summary(request.user, month, year)
         return Response(data)
 
-    @extend_schema(responses={200: inline_serializer('ReportCategorySummaryResponse', {'category_id': serializers.IntegerField(), 'category_name': serializers.CharField(), 'total': serializers.DecimalField(max_digits=14, decimal_places=2)}, many=True)})
+    @extend_schema(
+        summary="Category Distribution Report",
+        responses={200: inline_serializer('ReportCategorySummaryResponse', {'category_id': serializers.IntegerField(), 'category_name': serializers.CharField(), 'total': serializers.DecimalField(max_digits=14, decimal_places=2)}, many=True)}
+    )
     @action(detail=False, methods=['get'])
     def by_category(self, request):
-        """Return spending totals grouped by category for the specified period."""
+        """
+        Generate a breakdown of spending by category for a period.
+        
+        Returns:
+            Response: List of categories with total amounts spent in each.
+        """
         month = request.query_params.get('month')
         year = request.query_params.get('year')
         data = ReportService().category_summary(request.user, month, year)
