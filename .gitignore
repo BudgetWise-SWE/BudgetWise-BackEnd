@@ -9,3 +9,4 @@ supabase/
 cookies.txt
 Core/__pycache__
 .idea/
+.venv
