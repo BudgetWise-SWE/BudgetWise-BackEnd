@@ -8,4 +8,4 @@ supabase/
 .vscode
 cookies.txt
 Core/__pycache__
-.idea/
+.idea/.myenv
