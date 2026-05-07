@@ -1,10 +1,21 @@
+"""
+Serializers for the analytics application.
+
+Provides data structures for financial reports, budget alerts,
+dashboard summaries, and categorical spending breakdowns.
+"""
 from rest_framework import serializers
 from decimal import Decimal
 from finance.models import BudgetCategoryLimit, Transaction, Category
 
 
 class BudgetAlertSerializer(serializers.ModelSerializer):
-    """Serializer for budget category limit alerts with computed progress and status color."""
+    """
+    Serializer for budget category limit alerts.
+    
+    Computes visual cues like progress percentage, status color (green/orange/red),
+    and human-readable alert messages.
+    """
 
     category_name = serializers.CharField(source='category.name', read_only=True)
     progress_percentage = serializers.SerializerMethodField()
@@ -12,17 +23,35 @@ class BudgetAlertSerializer(serializers.ModelSerializer):
     alert_message = serializers.SerializerMethodField()
 
     class Meta:
+        """Metadata for BudgetAlertSerializer."""
         model = BudgetCategoryLimit
         fields = ['category_name', 'limit', 'spent', 'progress_percentage', 'status_color', 'alert_message']
 
     def get_progress_percentage(self, obj):
-        """Return spending as a percentage of the limit."""
+        """
+        Calculate spending as a percentage of the limit.
+        
+        Args:
+            obj (BudgetCategoryLimit): The limit instance.
+            
+        Returns:
+            float: Percentage value rounded to 2 decimal places.
+        """
         if obj.limit > 0:
             return round((obj.spent / obj.limit) * 100, 2)
         return 0
 
     def get_status_color(self, obj):
-        """Return a color string based on how close spending is to the limit."""
+        """
+        Determine the visual status color based on consumption.
+        
+        - 100%+ -> red
+        - 90%-100% -> orange
+        - <90% -> green
+        
+        Returns:
+            str: Color code.
+        """
         percentage = self.get_progress_percentage(obj)
         if percentage >= 100:
             return 'red'
@@ -31,7 +60,12 @@ class BudgetAlertSerializer(serializers.ModelSerializer):
         return 'green'
 
     def get_alert_message(self, obj):
-        """Return a human-readable alert message if the limit is near or exceeded."""
+        """
+        Generate a human-readable notification message for the budget status.
+        
+        Returns:
+            str: Warning message or None.
+        """
         percentage = self.get_progress_percentage(obj)
         if percentage >= 100:
             diff = obj.spent - obj.limit
@@ -48,17 +82,24 @@ class BudgetAlertSerializer(serializers.ModelSerializer):
 
 
 class TransactionReportSerializer(serializers.ModelSerializer):
-    """Serializer for transaction data in reports."""
+    """
+    Simplified serializer for transaction data within analytical reports.
+    """
 
     category_name = serializers.ReadOnlyField(source='category.name')
 
     class Meta:
+        """Metadata for TransactionReportSerializer."""
         model = Transaction
         fields = ['id', 'date', 'amount', 'type', 'category_name', 'description']
 
 
 class CategorySpendingSerializer(serializers.Serializer):
-    """Serializer for category-level spending breakdown used in analytics charts."""
+    """
+    Data structure for category-level spending breakdown.
+    
+    Used primarily for pie charts and data visualization.
+    """
 
     category = serializers.CharField()
     total_spent = serializers.DecimalField(max_digits=10, decimal_places=2)
@@ -66,7 +107,12 @@ class CategorySpendingSerializer(serializers.Serializer):
 
 
 class DashboardSummarySerializer(serializers.Serializer):
-    """Serializer for the dashboard home page summary."""
+    """
+    Serializer for the main dashboard home page.
+    
+    Aggregates balance, monthly income/expenses, and lists recent transactions
+    and budget warnings.
+    """
 
     total_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
     monthly_income = serializers.DecimalField(max_digits=12, decimal_places=2)
@@ -75,13 +121,26 @@ class DashboardSummarySerializer(serializers.Serializer):
     budget_warnings = serializers.SerializerMethodField()
 
     def get_recent_transactions(self, obj):
-        """Return the 5 most recent transactions for the user."""
+        """
+        Fetch the 5 most recent transactions for the user.
+        
+        Args:
+            obj (dict): Context object containing 'user'.
+            
+        Returns:
+            list: List of serialized transactions.
+        """
         txs = Transaction.objects.filter(user=obj['user']).order_by('-date')[:5]
         from finance.serializers import TransactionSerializer
         return TransactionSerializer(txs, many=True).data
 
     def get_budget_warnings(self, obj):
-        """Return warning strings for budget category limits that are at or near their limit."""
+        """
+        Identify budgets that are at or near their limit.
+        
+        Returns:
+            list: List of warning strings.
+        """
         warnings = BudgetCategoryLimit.objects.filter(
             budget__user=obj['user'],
         ).select_related('category')
