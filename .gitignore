@@ -10,3 +10,4 @@ cookies.txt
 Core/__pycache__
 .idea/
 .venv
+.idea/.myenv
