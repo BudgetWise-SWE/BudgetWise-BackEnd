@@ -107,7 +107,7 @@ load_dotenv(dotenv_path='.myenv')
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-        conn_max_age=600,
+        conn_max_age=0,
         ssl_require=True
     )
 }
