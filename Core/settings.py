@@ -62,17 +62,26 @@ MIDDLEWARE = [
 ]
 
 # CORS Configuration for Token Auth
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:5500',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5500',
-    'https://budget-wise-back-end.vercel.app',
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'content-type',
+    'x-csrftoken',
+]
+
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 ROOT_URLCONF = 'Core.urls'
 
