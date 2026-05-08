@@ -58,13 +58,15 @@ class CategoryViewSet(OwnerMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Return user-specific categories combined with system-wide predefined categories.
-        
-        Returns:
-            QuerySet: Categories matching the criteria.
+        Supports filtering by 'type' query parameter.
         """
-        return Category.objects.filter(
+        queryset = Category.objects.filter(
             Q(user=self.request.user) | Q(is_predefined=True)
         )
+        category_type = self.request.query_params.get('type')
+        if category_type:
+            queryset = queryset.filter(type=category_type)
+        return queryset
 
     def perform_create(self, serializer):
         """

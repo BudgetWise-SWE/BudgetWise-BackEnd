@@ -50,13 +50,14 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     category_name = serializers.CharField(required=False, write_only=True)
     category_display_name = serializers.CharField(source='category.name', read_only=True)
+    name = serializers.CharField(source='description', required=False, write_only=True)
 
     class Meta:
         """Metadata for TransactionSerializer."""
         model = Transaction
         fields = [
             'id', 'type', 'category', 'category_name', 'category_display_name',
-            'amount', 'date', 'description', 'notes', 'source', 'created_at',
+            'amount', 'date', 'description', 'name', 'notes', 'source', 'created_at',
         ]
         read_only_fields = ['created_at']
 
@@ -88,14 +89,13 @@ class TransactionSerializer(serializers.ModelSerializer):
             ).first()
             
             if not category:
-                # Optional: create a new category if not found, 
-                # but for now let's just use a default or error.
-                # Let's try to find an 'Other' category as fallback
-                category = Category.objects.filter(
-                    models.Q(user=user) | models.Q(is_predefined=True),
-                    name__iexact='Other',
-                    type=transaction_type
-                ).first()
+                # [NEW LOGIC] Create the category on the fly if it doesn't exist
+                category = Category.objects.create(
+                    user=user,
+                    name=category_name,
+                    type=transaction_type,
+                    is_predefined=False
+                )
             
             data['category'] = category
 
