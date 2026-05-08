@@ -84,11 +84,11 @@ class Transaction(models.Model):
     )
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     date = models.DateField(default=timezone.now)
-    description = models.CharField(max_length=255, blank=True)
-    notes = models.TextField(blank=True)
+    description = models.CharField(max_length=255, blank=True , null=True)
+    notes = models.TextField(blank=True , null=True)
     source = models.CharField(max_length=100, blank=True , null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         """Metadata for the Transaction model."""
         ordering = ['-date', '-created_at']
