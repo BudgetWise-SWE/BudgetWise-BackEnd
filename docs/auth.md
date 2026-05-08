@@ -1,67 +1,51 @@
 # Authentication Protocol
 
-BudgetWise implements session-based authentication to manage secure user sessions and protect sensitive financial data.
+BudgetWise uses **Token-Based Authentication** for maximum simplicity and frontend compatibility. This eliminates CSRF issues and session management overhead.
 
-## Authentication Workflow
+## 🔑 How to Authenticate
 
-1.  **Identity Verification**: Clients transmit a `POST` request to `/api/auth/login/` with valid credentials.
-2.  **Session Establishment**: Upon verification, the server issues a unique session identifier (`sessionid`) via a secure cookie.
-3.  **Authorized Access**: Subsequent requests must include this session identifier to access protected resources.
+1.  **Obtain Token**: Send your email and password to the `/api/auth/login/` endpoint.
+2.  **Use Token**: Include the received token in the `Authorization` header for all subsequent requests.
 
-## Integration Requirements
-
-For frontend applications, it is mandatory to configure the network client with `credentials: "include"`. This ensures the browser appropriately manages and transmits session cookies.
-
-## API Endpoints
-
-| Endpoint | Method | Functional Description |
-|----------|--------|------------------------|
-| `/api/auth/login/` | `POST` | Authenticates user and initializes session |
-| `/api/auth/logout/` | `POST` | Invalidates current session |
-| `/api/auth/` | `POST` | User registration |
-| `/api/auth/me/` | `GET` | Retrieves authenticated profile data |
-
-### Example Payloads
-
-**Authentication Request:**
+### 1. Login (Obtaining the Token)
+**Endpoint**: `POST /api/auth/login/`
+**Body**:
 ```json
 {
   "email": "user@example.com",
-  "password": "secure_password"
+  "password": "yourpassword"
 }
 ```
-
-**Registration Request:**
+**Response**:
 ```json
 {
-  "email": "user@example.com",
-  "first_name": "Firstname",
-  "last_name": "Lastname",
-  "password": "secure_password"
+  "token": "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b",
+  "user": { ... }
 }
 ```
 
-## CSRF Token Management
+### 2. Authenticating Requests
+Include the token in every request header:
+`Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b`
 
-To simplify cross-domain integration, the backend provides the `csrf_token` in the response body for the following actions:
-*   **Registration** (`POST /api/auth/`)
-*   **Login** (`POST /api/auth/login/`)
-*   **Get Profile** (`GET /api/auth/me/`)
+### Example (Javascript/Axios)
+```javascript
+const token = "9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b";
 
-### Frontend Implementation
-1.  **Capture**: Extract the `csrf_token` from the response JSON.
-2.  **Transmit**: Include this token in the `X-CSRFToken` header for all state-changing requests (POST, PUT, PATCH, DELETE).
-3.  **Persistence**: If the page is refreshed, call `/api/auth/me/` to retrieve a fresh token along with the user profile.
+axios.get('https://budget-wise-back-end.vercel.app/api/auth/me/', {
+    headers: {
+        'Authorization': `Token ${token}`
+    }
+});
+```
 
-## Security & Cross-Domain Controls
+## 🚀 Key Advantages
 
-The application enforces Cross-Site Request Forgery (CSRF) protection for all state-changing operations. 
+*   **No CSRF**: Since we don't use cookies for authentication, CSRF protection is not required.
+*   **Persistent**: The token remains valid until the user manually logs out or it is deleted from the server.
+*   **Simple**: Frontend only needs to store one string (the token).
 
-### Production Cookie Policy (Vercel)
-When hosted on Vercel, the backend implements a strict cookie policy to support cross-domain frontend communication:
-*   **SameSite=None**: Allows cookies to be sent from different frontend domains (e.g., Localhost or Vercel Frontend).
-*   **Secure**: Cookies are only transmitted over HTTPS (Mandatory for Vercel).
-*   **HttpOnly**: Session cookies are inaccessible to client-side scripts to prevent XSS.
+## 🛠 Developer Notes
 
-> [!IMPORTANT]
-> Ensure your frontend is calling the backend over **HTTPS** in production, otherwise the browser will reject the authentication cookies.
+*   **Base URL**: `https://budget-wise-back-end.vercel.app/`
+*   **Testing**: You can use the "Authorize" button in Swagger and enter your token (prefix with `Token `) to test endpoints.

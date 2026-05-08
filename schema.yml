@@ -20,8 +20,7 @@ paths:
       tags:
       - analytics
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -40,8 +39,7 @@ paths:
       tags:
       - analytics
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -57,8 +55,7 @@ paths:
       tags:
       - analytics
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -71,8 +68,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -91,8 +87,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -108,23 +103,16 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
   /api/auth/:
     post:
       operationId: api_auth_create
-      description: |-
-        ViewSet for authentication operations: register, login, logout, and profile management.
-
-        This viewset handles:
-        - User registration (POST /auth/)
-        - Login (POST /auth/login/)
-        - Logout (GET/POST /auth/logout/)
-        - Current User Profile (GET /auth/me/)
-        - Profile Update (PATCH /auth/update_profile/)
+      description: Register a new user and return user data with an authentication
+        token.
+      summary: User Registration
       tags:
       - api
       requestBody:
@@ -140,20 +128,19 @@ paths:
               $ref: '#/components/schemas/User'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       - {}
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/RegisterResponse'
           description: ''
   /api/auth/login/:
     post:
       operationId: api_auth_login_create
-      description: Authenticates a user by email and password and establishes a session.
+      description: Authenticates a user and returns a persistent authentication token.
       summary: User Login
       tags:
       - api
@@ -170,8 +157,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       - {}
       responses:
         '200':
@@ -179,39 +165,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
-          description: ''
-  /api/auth/logout/:
-    get:
-      operationId: api_auth_logout_retrieve
-      description: Terminates the current authenticated user's session.
-      summary: User Logout
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoutResponse'
-          description: ''
-    post:
-      operationId: api_auth_logout_create
-      description: Terminates the current authenticated user's session.
-      summary: User Logout
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoutResponse'
           description: ''
   /api/auth/me/:
     get:
@@ -221,8 +174,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -233,8 +185,7 @@ paths:
   /api/auth/update_profile/:
     patch:
       operationId: api_auth_update_profile_partial_update
-      description: Allows partial updates to the authenticated user's profile (name,
-        currency, language).
+      description: Allows partial updates to the authenticated user's profile.
       summary: Update Profile
       tags:
       - api
@@ -250,8 +201,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedUserUpdate'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -269,8 +219,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -301,8 +250,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -327,8 +275,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -364,8 +311,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -400,8 +346,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -425,8 +370,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -440,8 +384,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -472,8 +415,7 @@ paths:
               $ref: '#/components/schemas/Budget'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -498,8 +440,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -535,8 +476,7 @@ paths:
               $ref: '#/components/schemas/Budget'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -571,8 +511,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedBudget'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -596,8 +535,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -612,8 +550,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -645,8 +582,7 @@ paths:
               $ref: '#/components/schemas/Category'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -671,8 +607,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -708,8 +643,7 @@ paths:
               $ref: '#/components/schemas/Category'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -744,8 +678,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedCategory'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -769,8 +702,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -781,8 +713,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -798,8 +729,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -821,8 +751,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -840,8 +769,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -872,8 +800,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -898,8 +825,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -935,8 +861,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -971,8 +896,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedSavingsGoal'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -996,8 +920,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -1028,8 +951,7 @@ paths:
               $ref: '#/components/schemas/ContributeRequest'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1050,8 +972,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1085,8 +1006,7 @@ paths:
               $ref: '#/components/schemas/Transaction'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -1114,8 +1034,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1154,8 +1073,7 @@ paths:
               $ref: '#/components/schemas/Transaction'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1193,8 +1111,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedTransaction'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1221,8 +1138,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -1234,8 +1150,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1253,8 +1168,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1272,8 +1186,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1304,8 +1217,7 @@ paths:
               $ref: '#/components/schemas/Notification'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -1329,8 +1241,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1365,8 +1276,7 @@ paths:
               $ref: '#/components/schemas/Notification'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1400,8 +1310,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedNotification'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1424,8 +1333,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -1443,8 +1351,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -1456,8 +1363,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -1482,8 +1388,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1499,8 +1404,7 @@ paths:
       tags:
       - api
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1529,8 +1433,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1541,15 +1444,9 @@ paths:
   /auth/:
     post:
       operationId: auth_create
-      description: |-
-        ViewSet for authentication operations: register, login, logout, and profile management.
-
-        This viewset handles:
-        - User registration (POST /auth/)
-        - Login (POST /auth/login/)
-        - Logout (GET/POST /auth/logout/)
-        - Current User Profile (GET /auth/me/)
-        - Profile Update (PATCH /auth/update_profile/)
+      description: Register a new user and return user data with an authentication
+        token.
+      summary: User Registration
       tags:
       - auth
       requestBody:
@@ -1565,20 +1462,19 @@ paths:
               $ref: '#/components/schemas/User'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       - {}
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/RegisterResponse'
           description: ''
   /auth/login/:
     post:
       operationId: auth_login_create
-      description: Authenticates a user by email and password and establishes a session.
+      description: Authenticates a user and returns a persistent authentication token.
       summary: User Login
       tags:
       - auth
@@ -1595,8 +1491,7 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       - {}
       responses:
         '200':
@@ -1604,39 +1499,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
-          description: ''
-  /auth/logout/:
-    get:
-      operationId: auth_logout_retrieve
-      description: Terminates the current authenticated user's session.
-      summary: User Logout
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoutResponse'
-          description: ''
-    post:
-      operationId: auth_logout_create
-      description: Terminates the current authenticated user's session.
-      summary: User Logout
-      tags:
-      - auth
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LogoutResponse'
           description: ''
   /auth/me/:
     get:
@@ -1646,8 +1508,7 @@ paths:
       tags:
       - auth
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1658,8 +1519,7 @@ paths:
   /auth/update_profile/:
     patch:
       operationId: auth_update_profile_partial_update
-      description: Allows partial updates to the authenticated user's profile (name,
-        currency, language).
+      description: Allows partial updates to the authenticated user's profile.
       summary: Update Profile
       tags:
       - auth
@@ -1675,8 +1535,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedUserUpdate'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1694,8 +1553,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1726,8 +1584,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -1752,8 +1609,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1789,8 +1645,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1825,8 +1680,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1850,8 +1704,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -1865,8 +1718,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1897,8 +1749,7 @@ paths:
               $ref: '#/components/schemas/Budget'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -1923,8 +1774,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1960,8 +1810,7 @@ paths:
               $ref: '#/components/schemas/Budget'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -1996,8 +1845,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedBudget'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2021,8 +1869,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -2037,8 +1884,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2070,8 +1916,7 @@ paths:
               $ref: '#/components/schemas/Category'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -2096,8 +1941,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2133,8 +1977,7 @@ paths:
               $ref: '#/components/schemas/Category'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2169,8 +2012,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedCategory'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2194,8 +2036,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -2206,8 +2047,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -2223,8 +2063,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2246,8 +2085,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2265,8 +2103,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2297,8 +2134,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -2323,8 +2159,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2360,8 +2195,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2396,8 +2230,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedSavingsGoal'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2421,8 +2254,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -2453,8 +2285,7 @@ paths:
               $ref: '#/components/schemas/ContributeRequest'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2475,8 +2306,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2510,8 +2340,7 @@ paths:
               $ref: '#/components/schemas/Transaction'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -2539,8 +2368,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2579,8 +2407,7 @@ paths:
               $ref: '#/components/schemas/Transaction'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2618,8 +2445,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedTransaction'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2646,8 +2472,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -2659,8 +2484,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2678,8 +2502,7 @@ paths:
       tags:
       - finance
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2697,8 +2520,7 @@ paths:
       tags:
       - notifications
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2729,8 +2551,7 @@ paths:
               $ref: '#/components/schemas/Notification'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '201':
           content:
@@ -2754,8 +2575,7 @@ paths:
       tags:
       - notifications
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2790,8 +2610,7 @@ paths:
               $ref: '#/components/schemas/Notification'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2825,8 +2644,7 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchedNotification'
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2849,8 +2667,7 @@ paths:
       tags:
       - notifications
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '204':
           description: No response body
@@ -2868,8 +2685,7 @@ paths:
       tags:
       - notifications
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -2881,8 +2697,7 @@ paths:
       tags:
       - notifications
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           description: No response body
@@ -2907,8 +2722,7 @@ paths:
               $ref: '#/components/schemas/BudgetCategoryLimit'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2924,8 +2738,7 @@ paths:
       tags:
       - planning
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -2954,8 +2767,7 @@ paths:
               $ref: '#/components/schemas/SavingsGoal'
         required: true
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - tokenAuth: []
       responses:
         '200':
           content:
@@ -3200,20 +3012,13 @@ components:
     LoginResponse:
       type: object
       properties:
-        message:
+        token:
           type: string
         user:
           $ref: '#/components/schemas/User'
       required:
-      - message
+      - token
       - user
-    LogoutResponse:
-      type: object
-      properties:
-        message:
-          type: string
-      required:
-      - message
     Notification:
       type: object
       description: |-
@@ -3449,9 +3254,11 @@ components:
           format: date
         description:
           type: string
+          nullable: true
           maxLength: 255
         notes:
           type: string
+          nullable: true
         source:
           type: string
           nullable: true
@@ -3480,6 +3287,16 @@ components:
         language:
           type: string
           maxLength: 20
+    RegisterResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+      required:
+      - token
+      - user
     ReportCategorySummaryResponse:
       type: object
       properties:
@@ -3591,9 +3408,11 @@ components:
           format: date
         description:
           type: string
+          nullable: true
           maxLength: 255
         notes:
           type: string
+          nullable: true
         source:
           type: string
           nullable: true
@@ -3687,10 +3506,8 @@ components:
       - last_name
       - password
   securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
+    tokenAuth:
       type: apiKey
-      in: cookie
-      name: sessionid
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
