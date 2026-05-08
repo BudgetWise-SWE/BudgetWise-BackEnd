@@ -23,7 +23,9 @@ Core/__pycache__
 *.css.map
 
 .env
+.vscode
 search_index.json
 sitemap.xml
 *.cpython-314.pyc
 __pycache__/*.pyc
+BudgetWise-FrontEnd
