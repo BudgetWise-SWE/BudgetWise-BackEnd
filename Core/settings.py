@@ -11,22 +11,21 @@ from pathlib import Path
 import dj_database_url
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+
+
+
 SECRET_KEY = 'django-insecure-vb#2goa+k%fk0vbjv5t1*b(rg$x#h)c6z_81^y^t4r!0iz#azh'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+
 DEBUG = True
 
 ALLOWED_HOSTS = ['budget-wise-back-end.vercel.app', 'localhost', '127.0.0.1', '*']
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -50,9 +49,9 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,6 +59,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+SESSION_COOKIE_HTTPONLY = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
@@ -69,17 +70,18 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5500',
     'https://budget-wise-back-end.vercel.app',
-    
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
 CORS_ALLOW_ALL_ORIGINS = False
 
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+
 CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = False  
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:5173',
@@ -87,6 +89,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5500',
+    'https://budget-wise-back-end.vercel.app',
 ]
 
 ROOT_URLCONF = 'Core.urls'
@@ -108,16 +111,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Core.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 load_dotenv(dotenv_path='.myenv')
 
