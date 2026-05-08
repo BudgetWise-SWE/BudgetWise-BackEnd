@@ -7,14 +7,14 @@ Welcome to the official technical documentation for **BudgetWise**, a premium fi
 Explore the core components of the BudgetWise architecture:
 
 *   **[Getting Started](setup.md)**: Step-by-step installation and environment setup.
-*   **[Authentication](auth.md)**: Deep dive into our secure session-based protocols.
+*   **[Authentication](auth.md)**: Deep dive into our simple Token-Based Auth protocol.
 *   **[Financial Engine](finance/overview.md)**: Detailed breakdown of Transactions, Categories, and Budgets.
 *   **[Analytics](analytics.md)**: Overview of reporting capabilities and data aggregation.
 *   **[API Reference](reference/finance.md)**: Full technical endpoint specifications.
 
 ## 💎 Core Capabilities
 
-*   **Secure Identity**: Enterprise-grade session management with CSRF protection.
+*   **Token-Based Identity**: Stateless and frictionless authentication for modern SPAs.
 *   **Simplified Transactions**: Frictionless logging with intelligent category resolution.
 *   **Real-time Analytics**: Instant insights into spending distributions and trends.
 *   **Proactive Controls**: Dynamic budgetary limits with automated status monitoring.
