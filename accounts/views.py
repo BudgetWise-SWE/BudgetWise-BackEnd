@@ -5,6 +5,7 @@ This module provides the AuthViewSet which consolidates registration,
 login, logout, and profile operations into a single endpoint set.
 """
 from django.contrib.auth import logout, authenticate, login
+from django.middleware.csrf import get_token
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -30,20 +31,30 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
-    def perform_create(self, serializer):
+    @extend_schema(
+        summary="User Registration",
+        description="Register a new user and return user data with a CSRF token.",
+        responses={201: inline_serializer('RegisterResponse', {'user': UserSerializer(), 'csrf_token': serializers.CharField()})}
+    )
+    def create(self, request, *args, **kwargs):
         """
-        Register a new user using the custom user manager.
+        Register a new user and return their data with a CSRF token.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.create_user(**serializer.validated_data)
         
-        Args:
-            serializer (UserSerializer): The validated serializer instance.
-        """
-        User.objects.create_user(**serializer.validated_data)
+        # Optionally auto-login the user here or just return the token
+        return Response({
+            'user': UserSerializer(user).data,
+            'csrf_token': get_token(request)
+        }, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         summary="User Login",
         description="Authenticates a user by email and password and establishes a session.",
         request=inline_serializer('LoginRequest', {'email': serializers.EmailField(), 'password': serializers.CharField()}),
-        responses={200: inline_serializer('LoginResponse', {'message': serializers.CharField(), 'user': UserSerializer()})}
+        responses={200: inline_serializer('LoginResponse', {'message': serializers.CharField(), 'user': UserSerializer(), 'csrf_token': serializers.CharField()})}
     )
     @action(detail=False, methods=['post'])
     def login(self, request):
@@ -55,7 +66,7 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             password (str): The user's password.
             
         Returns:
-            Response: Success message and user data if valid, or error message.
+            Response: Success message, user data, and CSRF token.
         """
         email = request.data.get('email')
         password = request.data.get('password')
@@ -64,7 +75,11 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if user is not None:
             login(request, user)
             return Response(
-                {'message': 'Login successful', 'user': UserSerializer(user).data},
+                {
+                    'message': 'Login successful', 
+                    'user': UserSerializer(user).data,
+                    'csrf_token': get_token(request)
+                },
                 status=status.HTTP_200_OK,
             )
         return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -90,21 +105,21 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
     @extend_schema(
         summary="Get Current Profile",
-        description="Returns the profile data of the currently authenticated user.",
-        responses=UserSerializer
+        description="Returns the profile data of the currently authenticated user including CSRF token.",
+        responses={200: inline_serializer('ProfileResponse', {'id': serializers.IntegerField(), 'email': serializers.EmailField(), 'first_name': serializers.CharField(), 'last_name': serializers.CharField(), 'currency': serializers.CharField(), 'language': serializers.CharField(), 'csrf_token': serializers.CharField()})}
     )
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         """
-        Return the profile data of the currently authenticated user.
+        Return the profile data and current CSRF token.
         
         Requires Authentication.
-        
-        Returns:
-            Response: Authenticated user's profile data.
         """
         serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return Response({
+            **serializer.data,
+            'csrf_token': get_token(request)
+        })
 
     @extend_schema(
         summary="Update Profile",

@@ -41,6 +41,18 @@ For frontend applications, it is mandatory to configure the network client with 
 }
 ```
 
+## CSRF Token Management
+
+To simplify cross-domain integration, the backend provides the `csrf_token` in the response body for the following actions:
+*   **Registration** (`POST /api/auth/`)
+*   **Login** (`POST /api/auth/login/`)
+*   **Get Profile** (`GET /api/auth/me/`)
+
+### Frontend Implementation
+1.  **Capture**: Extract the `csrf_token` from the response JSON.
+2.  **Transmit**: Include this token in the `X-CSRFToken` header for all state-changing requests (POST, PUT, PATCH, DELETE).
+3.  **Persistence**: If the page is refreshed, call `/api/auth/me/` to retrieve a fresh token along with the user profile.
+
 ## Security & Cross-Domain Controls
 
 The application enforces Cross-Site Request Forgery (CSRF) protection for all state-changing operations. 

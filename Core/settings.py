@@ -92,6 +92,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://budget-wise-back-end.vercel.app',
 ]
 
+CSRF_USE_SESSIONS = True
+
 ROOT_URLCONF = 'Core.urls'
 
 TEMPLATES = [
