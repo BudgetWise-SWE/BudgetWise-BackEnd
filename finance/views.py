@@ -55,6 +55,20 @@ class CategoryViewSet(OwnerMixin, viewsets.ModelViewSet):
 
     serializer_class = CategorySerializer
 
+    def list(self, request, *args, **kwargs):
+        """
+        Seed default categories if none exist, then return the list.
+        """
+        if not Category.objects.filter(is_predefined=True).exists():
+            defaults = [
+                ('Food', 'expense'), ('Rent', 'expense'), ('Salary', 'income'),
+                ('Transport', 'expense'), ('Health', 'expense'), ('Shopping', 'expense'),
+                ('Utilities', 'expense'), ('Entertainment', 'expense')
+            ]
+            for name, type in defaults:
+                Category.objects.get_or_create(name=name, type=type, is_predefined=True)
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         """
         Return user-specific categories combined with system-wide predefined categories.
@@ -214,7 +228,7 @@ class BudgetViewSet(OwnerMixin, viewsets.ModelViewSet):
     Allows setting the total spending limit for a specific month and year.
     """
 
-    queryset = Budget.objects.all()
+    queryset = Budget.objects.select_related('user').all()
     serializer_class = BudgetSerializer
 
 
@@ -229,10 +243,9 @@ class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
     serializer_class = BudgetCategoryLimitSerializer
 
     def get_queryset(self):
-        """
-        Filter limits based on user and month (YYYY-MM).
-        """
-        queryset = BudgetCategoryLimit.objects.filter(budget__user=self.request.user)
+        queryset = BudgetCategoryLimit.objects.filter(
+            budget__user=self.request.user
+        ).select_related('budget__user', 'budget', 'category')
         month_str = self.request.query_params.get('month')
         if month_str:
             try:
@@ -241,6 +254,28 @@ class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
             except (ValueError, IndexError):
                 pass
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """
+        Handle creation with idempotency. If a limit for the category/month exists, update it.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        budget = serializer.validated_data.get('budget')
+        category = serializer.validated_data.get('category')
+        
+        # Check for existing limit to avoid 400 UniqueConstraint error
+        existing_limit = BudgetCategoryLimit.objects.filter(budget=budget, category=category).first()
+        if existing_limit:
+            serializer = self.get_serializer(existing_limit, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data)
+            
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class SavingsGoalViewSet(OwnerMixin, viewsets.ModelViewSet):

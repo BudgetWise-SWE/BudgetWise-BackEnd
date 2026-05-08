@@ -34,16 +34,6 @@ class CategorySerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        """
-        Create a new custom category.
-        
-        Args:
-            validated_data (dict): Validated input data.
-            
-        Returns:
-            Category: Created category instance with authenticated user attached.
-        """
-        validated_data['user'] = self.context['request'].user
         validated_data['is_predefined'] = False
         return super().create(validated_data)
 
@@ -283,33 +273,19 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
         read_only_fields = ['status']
 
     def get_spent(self, obj):
-        """
-        Calculate total spent in this category for the budget period.
-        """
-        from .models import Transaction
-        total = Transaction.objects.filter(
-            user=obj.budget.user,
-            category=obj.category,
-            type=Transaction.TYPE_EXPENSE,
-            date__year=obj.budget.year,
-            date__month=obj.budget.month
-        ).aggregate(total=serializers.DecimalField(max_digits=14, decimal_places=2).coerce_to_string(0))['total'] # Wait, aggregate Sum is better
-        
-        # Correct way to aggregate Sum in DRF serializer method
-        from django.db.models import Sum
-        total = Transaction.objects.filter(
-            user=obj.budget.user,
-            category=obj.category,
-            type=Transaction.TYPE_EXPENSE,
-            date__year=obj.budget.year,
-            date__month=obj.budget.month
-        ).aggregate(total_sum=Sum('amount'))['total_sum'] or 0
-        return total
+        if not hasattr(obj, '_cached_spent'):
+            from django.db.models import Sum
+            from .models import Transaction
+            obj._cached_spent = Transaction.objects.filter(
+                user=obj.budget.user,
+                category=obj.category,
+                type=Transaction.TYPE_EXPENSE,
+                date__year=obj.budget.year,
+                date__month=obj.budget.month
+            ).aggregate(total=Sum('amount'))['total'] or 0
+        return obj._cached_spent
 
     def get_remaining(self, obj):
-        """
-        Calculate remaining funds dynamically.
-        """
         return max(obj.limit - self.get_spent(obj), 0)
 
     def to_representation(self, instance):
@@ -318,11 +294,7 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
         """
         representation = super().to_representation(instance)
         if instance.category:
-            cat_name = instance.category.name
-            # Ensure consistency with the 'Heath' typo handle in storage.js
-            if cat_name == "Health":
-                cat_name = "Heath"
-            representation['category'] = cat_name
+            representation['category'] = instance.category.name
         return representation
 
     def validate(self, data):
