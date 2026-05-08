@@ -1,7 +1,7 @@
 .virtual/
 __pycache__/
 *.pyc
-.myenv
+.myvenv
 db.sqlite3
 supabase/
 .pdf
@@ -12,3 +12,18 @@ Core/__pycache__
 .venv
 .idea/.myenv
 .DS_Storesite/
+*.js
+*.html
+*.js.map
+*.png
+*.gz
+*.inv
+*.pyc
+*.css
+*.css.map
+
+.env
+search_index.json
+sitemap.xml
+*.cpython-314.pyc
+__pycache__/*.pyc

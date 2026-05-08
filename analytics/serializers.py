@@ -115,10 +115,31 @@ class DashboardSummarySerializer(serializers.Serializer):
     """
 
     total_balance = serializers.DecimalField(max_digits=12, decimal_places=2)
-    monthly_income = serializers.DecimalField(max_digits=12, decimal_places=2)
-    monthly_expenses = serializers.DecimalField(max_digits=12, decimal_places=2)
+    remaining = serializers.DecimalField(source='total_balance', max_digits=12, decimal_places=2)
+    total_income = serializers.DecimalField(source='monthly_income', max_digits=12, decimal_places=2)
+    total_expenses = serializers.SerializerMethodField()
+    total_transactions = serializers.SerializerMethodField()
+    num_of_trans = serializers.SerializerMethodField()
     recent_transactions = serializers.SerializerMethodField()
     budget_warnings = serializers.SerializerMethodField()
+
+    def get_total_expenses(self, obj):
+        """
+        Return negative expenses to match frontend expected summation.
+        """
+        return -obj['monthly_expenses']
+
+    def get_num_of_trans(self, obj):
+        """
+        Alias for total_transactions as expected by dashboard.js IDs.
+        """
+        return self.get_total_transactions(obj)
+
+    def get_total_transactions(self, obj):
+        """
+        Count the total number of transactions for the user.
+        """
+        return Transaction.objects.filter(user=obj['user']).count()
 
     def get_recent_transactions(self, obj):
         """

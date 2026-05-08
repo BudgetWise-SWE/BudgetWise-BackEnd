@@ -44,7 +44,7 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.create_user(**serializer.validated_data)
+        user = serializer.save()
         token, _ = Token.objects.get_or_create(user=user)
         return Response({
             'user': UserSerializer(user).data,
@@ -64,6 +64,14 @@ class AuthViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         """
         email = request.data.get('email')
         password = request.data.get('password')
+
+        # [FRONTEND ALIGNMENT] Decode Base64 password if sent by frontend
+        if password:
+            try:
+                import base64
+                password = base64.b64decode(password).decode('utf-8')
+            except Exception:
+                pass
 
         user = authenticate(username=email, password=password)
         if user:

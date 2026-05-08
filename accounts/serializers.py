@@ -11,31 +11,57 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer for user registration and profile retrieval.
-    
-    Includes basic profile information and ensures the password is write-only.
     """
+    fullname = serializers.CharField(write_only=True, required=False)
+    full_name = serializers.SerializerMethodField()
+    total_balance = serializers.SerializerMethodField()
 
     class Meta:
         """Metadata for the UserSerializer."""
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'currency', 'language', 'password']
+        fields = ['id', 'email', 'first_name', 'last_name', 'fullname', 'full_name', 'currency', 'language', 'password', 'total_balance']
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
+    def get_full_name(self, obj):
+        """
+        Return the user's full name.
+        """
+        return f"{obj.first_name} {obj.last_name}".strip()
+
+    def get_total_balance(self, obj):
+        """
+        Calculate the user's current total balance across all transactions.
+        """
+        from finance.models import Transaction
+        from django.db.models import Sum
+        
+        income = Transaction.objects.filter(user=obj, type='income').aggregate(Sum('amount'))['amount__sum'] or 0
+        expense = Transaction.objects.filter(user=obj, type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
+        return income - expense
+
     def create(self, validated_data):
         """
         Create a new user using the custom manager.
-        
-        This method ensures that the password is hashed correctly by calling
-        User.objects.create_user instead of the default ModelSerializer.create.
-        
-        Args:
-            validated_data (dict): The data validated by the serializer.
-            
-        Returns:
-            User: The newly created user instance.
         """
+        fullname = validated_data.pop('fullname', None)
+        if fullname:
+            names = fullname.split(' ', 1)
+            validated_data['first_name'] = names[0]
+            validated_data['last_name'] = names[1] if len(names) > 1 else ''
+
+        # [FRONTEND ALIGNMENT] Decode Base64 password if sent by frontend
+        password = validated_data.get('password')
+        if password:
+            try:
+                import base64
+                decoded_password = base64.b64decode(password).decode('utf-8')
+                validated_data['password'] = decoded_password
+            except Exception:
+                # Fallback to original if decoding fails (e.g., already plain text)
+                pass
+
         return User.objects.create_user(**validated_data)
 
 

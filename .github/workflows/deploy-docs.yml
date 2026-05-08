@@ -28,6 +28,9 @@ jobs:
           pip install -r requirements.txt
           pip install mkdocs-material "mkdocstrings[python]"
 
+      - name: Generate Swagger Schema
+        run: python manage.py spectacular --file schema.yml
+
       - name: Build and Deploy
         run: mkdocs gh-deploy --force
         env:

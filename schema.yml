@@ -2792,12 +2792,8 @@ components:
           maxLength: 100
         month:
           type: integer
-          maximum: 32767
-          minimum: 0
         year:
           type: integer
-          maximum: 2147483647
-          minimum: 0
         total_limit:
           type: string
           format: decimal
@@ -2825,14 +2821,12 @@ components:
       required:
       - created_at
       - id
-      - month
       - name
       - remaining
       - spent
       - status
       - total_limit
       - updated_at
-      - year
     BudgetAlert:
       type: object
       description: |-
@@ -2869,8 +2863,11 @@ components:
       - status_color
     BudgetCategoryLimit:
       type: object
-      description: Serializer for assigning limits to specific categories within a
-        budget.
+      description: |-
+        Serializer for assigning limits to specific categories within a budget.
+
+        Supports direct creation via 'month' (YYYY-MM) and 'category_name'
+        to align with frontend logic.
       properties:
         id:
           type: integer
@@ -2881,20 +2878,18 @@ components:
           type: integer
         category_name:
           type: string
-          readOnly: true
+        month:
+          type: string
+          writeOnly: true
         limit:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         spent:
           type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
         remaining:
           type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
         status:
           allOf:
@@ -2903,7 +2898,6 @@ components:
       required:
       - budget
       - category
-      - category_name
       - id
       - limit
       - remaining
@@ -2978,14 +2972,23 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        monthly_income:
+        remaining:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        monthly_expenses:
+        total_income:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_expenses:
+          type: string
+          readOnly: true
+        total_transactions:
+          type: string
+          readOnly: true
+        num_of_trans:
+          type: string
+          readOnly: true
         recent_transactions:
           type: string
           readOnly: true
@@ -2994,10 +2997,13 @@ components:
           readOnly: true
       required:
       - budget_warnings
-      - monthly_expenses
-      - monthly_income
+      - num_of_trans
       - recent_transactions
+      - remaining
       - total_balance
+      - total_expenses
+      - total_income
+      - total_transactions
     LoginRequest:
       type: object
       properties:
@@ -3077,12 +3083,8 @@ components:
           maxLength: 100
         month:
           type: integer
-          maximum: 32767
-          minimum: 0
         year:
           type: integer
-          maximum: 2147483647
-          minimum: 0
         total_limit:
           type: string
           format: decimal
@@ -3109,8 +3111,11 @@ components:
           readOnly: true
     PatchedBudgetCategoryLimit:
       type: object
-      description: Serializer for assigning limits to specific categories within a
-        budget.
+      description: |-
+        Serializer for assigning limits to specific categories within a budget.
+
+        Supports direct creation via 'month' (YYYY-MM) and 'category_name'
+        to align with frontend logic.
       properties:
         id:
           type: integer
@@ -3121,20 +3126,18 @@ components:
           type: integer
         category_name:
           type: string
-          readOnly: true
+        month:
+          type: string
+          writeOnly: true
         limit:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         spent:
           type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
         remaining:
           type: string
-          format: decimal
-          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
           readOnly: true
         status:
           allOf:
@@ -3202,7 +3205,16 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        target:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         current_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        saved:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
@@ -3249,13 +3261,22 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        amountOfMoney:
+          type: string
+          readOnly: true
         date:
           type: string
           format: date
+        dataOfTransaction:
+          type: string
+          format: date
+          readOnly: true
         description:
           type: string
           nullable: true
           maxLength: 255
+        name:
+          type: string
         notes:
           type: string
           nullable: true
@@ -3348,7 +3369,16 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        target:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
         current_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        saved:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
@@ -3374,6 +3404,7 @@ components:
       - id
       - name
       - progress
+      - saved
       - target_amount
     Transaction:
       type: object
@@ -3403,13 +3434,22 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        amountOfMoney:
+          type: string
+          readOnly: true
         date:
           type: string
           format: date
+        dataOfTransaction:
+          type: string
+          format: date
+          readOnly: true
         description:
           type: string
           nullable: true
           maxLength: 255
+        name:
+          type: string
         notes:
           type: string
           nullable: true
@@ -3422,9 +3462,10 @@ components:
           format: date-time
           readOnly: true
       required:
-      - amount
+      - amountOfMoney
       - category_display_name
       - created_at
+      - dataOfTransaction
       - id
       - type
     TransactionCategorySummaryResponse:
@@ -3471,10 +3512,7 @@ components:
         * `income` - Income
     User:
       type: object
-      description: |-
-        Serializer for user registration and profile retrieval.
-
-        Includes basic profile information and ensures the password is write-only.
+      description: Serializer for user registration and profile retrieval.
       properties:
         id:
           type: integer
@@ -3489,6 +3527,12 @@ components:
         last_name:
           type: string
           maxLength: 25
+        fullname:
+          type: string
+          writeOnly: true
+        full_name:
+          type: string
+          readOnly: true
         currency:
           type: string
           maxLength: 5
@@ -3499,12 +3543,17 @@ components:
           type: string
           writeOnly: true
           maxLength: 128
+        total_balance:
+          type: string
+          readOnly: true
       required:
       - email
       - first_name
+      - full_name
       - id
       - last_name
       - password
+      - total_balance
   securitySchemes:
     tokenAuth:
       type: apiKey

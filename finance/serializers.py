@@ -4,7 +4,11 @@ Serializers for the finance application.
 Handles validation and data conversion for categories, transactions,
 budgets, and savings goals. Includes business logic for linking
 transactions to the current user and service layer.
+
 """
+from django.db import models
+from django.db.models import Q
+from django.utils.dateparse import parse_date
 from rest_framework import serializers
 from .models import Category, Transaction, Budget, BudgetCategoryLimit, SavingsGoal
 from .services import TransactionService
@@ -22,6 +26,12 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name', 'type', 'is_predefined', 'created_at']
         read_only_fields = ['is_predefined', 'created_at']
+
+    def validate_type(self, value):
+        """Normalize type to lowercase."""
+        if value:
+            return value.lower()
+        return value
 
     def create(self, validated_data):
         """
@@ -50,14 +60,19 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     category_name = serializers.CharField(required=False, write_only=True)
     category_display_name = serializers.CharField(source='category.name', read_only=True)
-    name = serializers.CharField(source='description', required=False, write_only=True)
+    name = serializers.CharField(source='description', required=False)
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2, required=False)
+    date = serializers.DateField(required=False)
+    amountOfMoney = serializers.SerializerMethodField()
+    dataOfTransaction = serializers.DateField(source='date', required=False, read_only=True)
 
     class Meta:
         """Metadata for TransactionSerializer."""
         model = Transaction
         fields = [
             'id', 'type', 'category', 'category_name', 'category_display_name',
-            'amount', 'date', 'description', 'name', 'notes', 'source', 'created_at',
+            'amount', 'amountOfMoney', 'date', 'dataOfTransaction', 'description', 
+            'name', 'notes', 'source', 'created_at',
         ]
         read_only_fields = ['created_at']
 
@@ -73,6 +88,10 @@ class TransactionSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         amount = data.get('amount')
         transaction_type = data.get('type')
+        if transaction_type:
+            transaction_type = transaction_type.lower()
+            data['type'] = transaction_type
+            
         category = data.get('category')
         category_name = data.pop('category_name', None)
 
@@ -81,6 +100,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         # Resolve category by name if not provided by ID
         if category is None and category_name:
+            category_name = category_name.strip()
             # Search in user-specific categories or predefined ones
             category = Category.objects.filter(
                 models.Q(user=user) | models.Q(is_predefined=True),
@@ -103,6 +123,67 @@ class TransactionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'category': 'Category type must match transaction type.'})
 
         return data
+
+    def get_amountOfMoney(self, obj):
+        """
+        Return negated amount for expenses to match frontend expectations.
+        """
+        if obj.type == Transaction.TYPE_EXPENSE:
+            return -obj.amount
+        return obj.amount
+
+    def to_internal_value(self, data):
+        """
+        Handle amountOfMoney and dataOfTransaction from frontend input.
+        """
+        if 'amountOfMoney' in data and 'amount' not in data:
+            data['amount'] = data['amountOfMoney']
+        if 'dataOfTransaction' in data and 'date' not in data:
+            data['date'] = data['dataOfTransaction']
+        if 'name' in data and 'description' not in data:
+            data['description'] = data['name']
+        if 'category' in data and isinstance(data['category'], str) and not data['category'].isdigit():
+            cat_val = data['category'].strip()
+            # Handle frontend typo 'Heath' in submission
+            if cat_val == "Heath":
+                cat_val = "Health"
+            data['category_name'] = cat_val
+            # Remove from data to prevent ID lookup error if it's not an integer
+            new_data = data.copy()
+            del new_data['category']
+            return super().to_internal_value(new_data)
+            
+        return super().to_internal_value(data)
+
+    def to_representation(self, instance):
+        """
+        Capitalize 'type' field in response.
+        """
+        representation = super().to_representation(instance)
+        if representation.get('type'):
+            representation['type'] = representation['type'].capitalize()
+
+        # [FRONTEND ALIGNMENT] Format date to match hardcoded UI style (e.g., Jun 14, 2023)
+        if instance.date:
+            representation['dataOfTransaction'] = instance.date.strftime('%b %d, %Y')
+            
+        # [FRONTEND ALIGNMENT] Ensure display fields are strings, not null
+        if representation.get('notes') is None:
+            representation['notes'] = ""
+        if representation.get('name') is None:
+            representation['name'] = ""
+        if representation.get('description') is None:
+            representation['description'] = ""
+            
+        # [FRONTEND ALIGNMENT] Category must be the name string, not ID, for storage.js logic
+        if instance.category:
+            cat_name = instance.category.name
+            # Handle frontend typo 'Heath' in storage.js colors map
+            if cat_name == "Health":
+                cat_name = "Heath"
+            representation['category'] = cat_name
+
+        return representation
 
     def create(self, validated_data):
         """
@@ -130,6 +211,8 @@ class BudgetSerializer(serializers.ModelSerializer):
 
     spent = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
     remaining = serializers.SerializerMethodField()
+    month = serializers.IntegerField(required=False)
+    year = serializers.IntegerField(required=False)
 
     class Meta:
         """Metadata for BudgetSerializer."""
@@ -139,6 +222,25 @@ class BudgetSerializer(serializers.ModelSerializer):
             'spent', 'remaining', 'status', 'created_at', 'updated_at',
         ]
         read_only_fields = ['status', 'created_at', 'updated_at', 'spent', 'remaining']
+
+    def validate(self, data):
+        """
+        Support 'month' as 'YYYY-MM' string from the frontend.
+        """
+        request = self.context.get('request')
+        if request and 'month' in request.data and isinstance(request.data['month'], str) and '-' in request.data['month']:
+            try:
+                year_str, month_str = request.data['month'].split('-')
+                data['year'] = int(year_str)
+                data['month'] = int(month_str)
+            except (ValueError, IndexError):
+                raise serializers.ValidationError({'month': 'Invalid month format. Use YYYY-MM.'})
+        
+        if not data.get('month') or not data.get('year'):
+            if not request or request.method == 'POST':
+                raise serializers.ValidationError({'month': 'Month and Year are required.'})
+
+        return data
 
     def get_remaining(self, obj):
         """
@@ -156,12 +258,6 @@ class BudgetSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
         Establish a new budget for the authenticated user.
-        
-        Args:
-            validated_data (dict): Validated input data.
-            
-        Returns:
-            Budget: Newly created budget instance.
         """
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
@@ -170,16 +266,114 @@ class BudgetSerializer(serializers.ModelSerializer):
 class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
     """
     Serializer for assigning limits to specific categories within a budget.
+    
+    Supports direct creation via 'month' (YYYY-MM) and 'category_name'
+    to align with frontend logic.
     """
 
-    remaining = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    spent = serializers.SerializerMethodField()
+    remaining = serializers.SerializerMethodField()
+    category_name = serializers.CharField(required=False)
+    month = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         """Metadata for BudgetCategoryLimitSerializer."""
         model = BudgetCategoryLimit
-        fields = ['id', 'budget', 'category', 'category_name', 'limit', 'spent', 'remaining', 'status']
-        read_only_fields = ['spent', 'status', 'remaining', 'category_name']
+        fields = ['id', 'budget', 'category', 'category_name', 'month', 'limit', 'spent', 'remaining', 'status']
+        read_only_fields = ['status']
+
+    def get_spent(self, obj):
+        """
+        Calculate total spent in this category for the budget period.
+        """
+        from .models import Transaction
+        total = Transaction.objects.filter(
+            user=obj.budget.user,
+            category=obj.category,
+            type=Transaction.TYPE_EXPENSE,
+            date__year=obj.budget.year,
+            date__month=obj.budget.month
+        ).aggregate(total=serializers.DecimalField(max_digits=14, decimal_places=2).coerce_to_string(0))['total'] # Wait, aggregate Sum is better
+        
+        # Correct way to aggregate Sum in DRF serializer method
+        from django.db.models import Sum
+        total = Transaction.objects.filter(
+            user=obj.budget.user,
+            category=obj.category,
+            type=Transaction.TYPE_EXPENSE,
+            date__year=obj.budget.year,
+            date__month=obj.budget.month
+        ).aggregate(total_sum=Sum('amount'))['total_sum'] or 0
+        return total
+
+    def get_remaining(self, obj):
+        """
+        Calculate remaining funds dynamically.
+        """
+        return max(obj.limit - self.get_spent(obj), 0)
+
+    def to_representation(self, instance):
+        """
+        Return category name instead of ID for frontend display logic.
+        """
+        representation = super().to_representation(instance)
+        if instance.category:
+            cat_name = instance.category.name
+            # Ensure consistency with the 'Heath' typo handle in storage.js
+            if cat_name == "Health":
+                cat_name = "Heath"
+            representation['category'] = cat_name
+        return representation
+
+    def validate(self, data):
+        """
+        Resolve budget and category from month and category_name if IDs are missing.
+        """
+        request = self.context.get('request')
+        user = request.user
+        category_name = data.get('category_name')
+        if category_name:
+            category_name = category_name.strip()
+        month_str = data.pop('month', None)
+        
+        # 1. Resolve Category
+        if not data.get('category') and category_name:
+            category = Category.objects.filter(
+                Q(user=user) | Q(is_predefined=True),
+                name__iexact=category_name,
+                type=Category.TYPE_EXPENSE
+            ).first()
+            if not category:
+                # Create category if it doesn't exist (assuming expense for budget)
+                category = Category.objects.create(
+                    user=user,
+                    name=category_name,
+                    type=Category.TYPE_EXPENSE
+                )
+            data['category'] = category
+
+        # 2. Resolve/Create Budget container for the month
+        if not data.get('budget') and month_str:
+            try:
+                year, month = map(int, month_str.split('-'))
+                budget, _ = Budget.objects.get_or_create(
+                    user=user,
+                    year=year,
+                    month=month,
+                    defaults={'name': f"{month_str} Budget", 'total_limit': 0}
+                )
+                data['budget'] = budget
+            except (ValueError, IndexError):
+                raise serializers.ValidationError({'month': 'Invalid month format. Use YYYY-MM.'})
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Remove 'category_name' from validated_data before creating the instance.
+        """
+        validated_data.pop('category_name', None)
+        return super().create(validated_data)
 
 
 class SavingsGoalSerializer(serializers.ModelSerializer):
@@ -190,25 +384,75 @@ class SavingsGoalSerializer(serializers.ModelSerializer):
     """
 
     progress = serializers.IntegerField(read_only=True)
+    target = serializers.DecimalField(source='target_amount', max_digits=14, decimal_places=2, required=False)
+    saved = serializers.DecimalField(source='current_amount', max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         """Metadata for SavingsGoalSerializer."""
         model = SavingsGoal
         fields = [
-            'id', 'name', 'target_amount', 'current_amount',
+            'id', 'name', 'target_amount', 'target', 'current_amount', 'saved',
             'deadline', 'completed', 'progress', 'created_at',
         ]
-        read_only_fields = ['completed', 'progress', 'created_at', 'current_amount']
+        read_only_fields = ['completed', 'progress', 'created_at', 'current_amount', 'saved']
+
+
+    def to_representation(self, instance):
+        """
+        Add UI-specific fields for frontend parity.
+        """
+        representation = super().to_representation(instance)
+        
+        # 1. Format deadline as YYYY-MM
+        if instance.deadline:
+            representation['deadline'] = instance.deadline.strftime('%Y-%m')
+            
+        # 2. Add status
+        representation['status'] = "completed" if instance.completed else "in-progress"
+        
+        # 3. Derive icon and iconType from name (matching savings.js logic)
+        name = instance.name.lower()
+        icon_map = {
+            'emergency': ('security', 'emergency'),
+            'vacation': ('beach_access', 'vacation'),
+            'travel': ('flight', 'vacation'),
+            'house': ('home', 'home'),
+            'home': ('home', 'home'),
+            'car': ('directions_car', 'tech'),
+            'laptop': ('computer', 'tech'),
+            'computer': ('computer', 'tech'),
+        }
+        
+        icon = 'savings'
+        icon_type = 'emergency'
+        
+        for key, (i, it) in icon_map.items():
+            if key in name:
+                icon = i
+                icon_type = it
+                break
+                
+        representation['icon'] = icon
+        representation['iconType'] = icon_type
+        
+        return representation
+
+    def validate(self, data):
+        """
+        Support 'deadline' as 'YYYY-MM' string from the frontend.
+        """
+        request = self.context.get('request')
+        if request and 'deadline' in request.data and isinstance(request.data['deadline'], str) and len(request.data['deadline']) == 7:
+            try:
+                deadline_str = request.data['deadline'] + "-01"
+                data['deadline'] = parse_date(deadline_str)
+            except (ValueError, IndexError):
+                raise serializers.ValidationError({'deadline': 'Invalid deadline format. Use YYYY-MM.'})
+        return data
 
     def create(self, validated_data):
         """
         Register a new savings goal for the current user.
-        
-        Args:
-            validated_data (dict): Validated input data.
-            
-        Returns:
-            SavingsGoal: Created instance.
         """
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)

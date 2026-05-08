@@ -65,7 +65,7 @@ class CategoryViewSet(OwnerMixin, viewsets.ModelViewSet):
         )
         category_type = self.request.query_params.get('type')
         if category_type:
-            queryset = queryset.filter(type=category_type)
+            queryset = queryset.filter(type__iexact=category_type.lower())
         return queryset
 
     def perform_create(self, serializer):
@@ -108,17 +108,33 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
         category_id = params.get('category')
         date_from = params.get('date_from')
         date_to = params.get('date_to')
+        search_term = params.get('search')
 
+        transaction_type = params.get('type')
         if transaction_type:
+            transaction_type = transaction_type.lower()
+            if transaction_type == 'credit':
+                transaction_type = Transaction.TYPE_INCOME
+            elif transaction_type == 'debit':
+                transaction_type = Transaction.TYPE_EXPENSE
             queryset = queryset.filter(type=transaction_type)
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
+        category_param = params.get('category')
+        if category_param:
+            if category_param.isdigit():
+                queryset = queryset.filter(category_id=category_param)
+            else:
+                queryset = queryset.filter(category__name__iexact=category_param)
         if date_from:
             queryset = queryset.filter(date__gte=date_from)
         if date_to:
             queryset = queryset.filter(date__lte=date_to)
+        if search_term:
+            queryset = queryset.filter(
+                Q(description__icontains=search_term) | 
+                Q(notes__icontains=search_term)
+            )
 
-        return queryset
+        return queryset.order_by('date', 'created_at')
 
     @extend_schema(
         summary="Transaction Summary",
@@ -145,10 +161,16 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
             type=Transaction.TYPE_EXPENSE
         ).aggregate(total=Sum('amount'))['total'] or 0
 
+        # Get recent transactions (last 4)
+        recent_transactions = queryset.order_by('-date', '-created_at')[:4]
+        recent_serializer = TransactionSerializer(recent_transactions, many=True)
+
         return Response({
-            'income': total_income,
-            'expense': total_expense,
-            'balance': total_income - total_expense,
+            'total_income': total_income,
+            'total_expenses': total_expense,
+            'total_balance': total_income - total_expense,
+            'total_transactions': queryset.count(),
+            'recent_transactions': recent_serializer.data,
         })
 
     @extend_schema(
@@ -208,12 +230,17 @@ class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Filter limits based on the owner of the parent budget.
-        
-        Returns:
-            QuerySet: Category limits belonging to the user.
+        Filter limits based on user and month (YYYY-MM).
         """
-        return BudgetCategoryLimit.objects.filter(budget__user=self.request.user)
+        queryset = BudgetCategoryLimit.objects.filter(budget__user=self.request.user)
+        month_str = self.request.query_params.get('month')
+        if month_str:
+            try:
+                year, month = map(int, month_str.split('-'))
+                queryset = queryset.filter(budget__year=year, budget__month=month)
+            except (ValueError, IndexError):
+                pass
+        return queryset
 
 
 class SavingsGoalViewSet(OwnerMixin, viewsets.ModelViewSet):
