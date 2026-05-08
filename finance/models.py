@@ -44,13 +44,6 @@ class Category(models.Model):
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     is_predefined = models.BooleanField(default=False)
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='children',
-    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -108,7 +101,7 @@ class Transaction(models.Model):
     date = models.DateField(default=timezone.now)
     description = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
-    source = models.CharField(max_length=100, blank=True)
+    source = models.CharField(max_length=100, blank=True , null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
