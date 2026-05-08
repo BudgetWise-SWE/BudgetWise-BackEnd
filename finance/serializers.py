@@ -20,7 +20,7 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         """Metadata for CategorySerializer."""
         model = Category
-        fields = ['id', 'name', 'type', 'parent', 'is_predefined', 'created_at']
+        fields = ['id', 'name', 'type', 'is_predefined', 'created_at']
         read_only_fields = ['is_predefined', 'created_at']
 
     def create(self, validated_data):
@@ -45,16 +45,17 @@ class TransactionSerializer(serializers.ModelSerializer):
     Includes validation for amounts, category matching, and income requirements.
     """
 
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_name = serializers.CharField(required=False, write_only=True)
+    category_display_name = serializers.CharField(source='category.name', read_only=True)
 
     class Meta:
         """Metadata for TransactionSerializer."""
         model = Transaction
         fields = [
-            'id', 'type', 'category', 'category_name',
+            'id', 'type', 'category', 'category_name', 'category_display_name',
             'amount', 'date', 'description', 'notes', 'source', 'created_at',
         ]
-        read_only_fields = ['created_at', 'category_name']
+        read_only_fields = ['created_at']
 
     def validate(self, data):
         """
@@ -62,8 +63,8 @@ class TransactionSerializer(serializers.ModelSerializer):
         
         Checks:
         1. Amount is positive.
-        2. Transaction type matches the chosen category's type.
-        3. Income transactions have a source defined.
+        2. Resolves category by name if ID is not provided.
+        3. Transaction type matches the chosen category's type.
         
         Args:
             data (dict): Input data to validate.
@@ -74,17 +75,39 @@ class TransactionSerializer(serializers.ModelSerializer):
         Raises:
             serializers.ValidationError: If any business rule is violated.
         """
+        user = self.context['request'].user
         amount = data.get('amount')
         transaction_type = data.get('type')
         category = data.get('category')
-        source = data.get('source', '')
+        category_name = data.pop('category_name', None)
 
         if amount is None or amount <= 0:
-            raise serializers.ValidationError('Amount must be greater than zero.')
-        if category is not None and category.type != transaction_type:
-            raise serializers.ValidationError('Category type must match transaction type.')
-        if transaction_type == Transaction.TYPE_INCOME and not source:
-            raise serializers.ValidationError('Income transactions require a source.')
+            raise serializers.ValidationError({'amount': 'Amount must be greater than zero.'})
+
+        # Resolve category by name if not provided by ID
+        if category is None and category_name:
+            # Search in user-specific categories or predefined ones
+            category = Category.objects.filter(
+                models.Q(user=user) | models.Q(is_predefined=True),
+                name__iexact=category_name,
+                type=transaction_type
+            ).first()
+            
+            if not category:
+                # Optional: create a new category if not found, 
+                # but for now let's just use a default or error.
+                # Let's try to find an 'Other' category as fallback
+                category = Category.objects.filter(
+                    models.Q(user=user) | models.Q(is_predefined=True),
+                    name__iexact='Other',
+                    type=transaction_type
+                ).first()
+            
+            data['category'] = category
+
+        if data.get('category') and data.get('category').type != transaction_type:
+            raise serializers.ValidationError({'category': 'Category type must match transaction type.'})
+
         return data
 
     def create(self, validated_data):
