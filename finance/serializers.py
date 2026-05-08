@@ -40,9 +40,12 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     """
-    Serializer for logging financial transactions.
+    Handles serialization and validation for financial transactions.
     
-    Includes validation for amounts, category matching, and income requirements.
+    Key Features:
+    - Supports `category_name` for intuitive creation via text instead of IDs.
+    - Implements intelligent fallbacks (e.g., 'Other' category) for resilient data entry.
+    - Enforces minimal mandatory fields to support rapid financial logging.
     """
 
     category_name = serializers.CharField(required=False, write_only=True)
@@ -59,21 +62,12 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """
-        Perform complex cross-field validation.
+        Validate and enrich transaction data.
         
-        Checks:
-        1. Amount is positive.
-        2. Resolves category by name if ID is not provided.
-        3. Transaction type matches the chosen category's type.
-        
-        Args:
-            data (dict): Input data to validate.
-            
-        Returns:
-            dict: Validated data.
-            
-        Raises:
-            serializers.ValidationError: If any business rule is violated.
+        Logic:
+        1. Resolves `category_name` to a formal Category instance if `category` ID is missing.
+        2. Ensures the transaction type (income/expense) matches the category.
+        3. Defaults missing categories to 'Other' to ensure data capture.
         """
         user = self.context['request'].user
         amount = data.get('amount')

@@ -14,17 +14,10 @@ from django.utils import timezone
 
 class Category(models.Model):
     """
-    Represents a classification for transactions (e.g., Food, Salary, Rent).
+    Classifies transactions into broad types (e.g., Food, Salary, Rent).
     
-    Categories can be system-predefined or custom-created by users.
-    
-    Attributes:
-        user (ForeignKey): The user who created the category (None for predefined).
-        name (CharField): The display name of the category.
-        type (CharField): Choice of 'expense' or 'income'.
-        is_predefined (BooleanField): True if the category is available to all users.
-        parent (ForeignKey): Optional self-referential link for sub-categories.
-        created_at (DateTimeField): When the category was added.
+    Categories are flat-structured for simplicity and speed. They can be 
+    system-wide (predefined) or custom-created by individual users.
     """
 
     TYPE_EXPENSE = 'expense'
@@ -63,18 +56,10 @@ class Category(models.Model):
 
 class Transaction(models.Model):
     """
-    Represents an individual financial movement (income or expense).
+    Records an individual financial movement (income or expense).
     
-    Attributes:
-        user (ForeignKey): The user who owns the transaction.
-        type (CharField): Choice of 'expense' or 'income'.
-        category (ForeignKey): The category assigned to the transaction.
-        amount (DecimalField): The monetary value.
-        date (DateField): When the transaction occurred.
-        description (CharField): A brief overview.
-        notes (TextField): Optional detailed commentary.
-        source (CharField): The origin of income (e.g., 'Employer Name').
-        created_at (DateTimeField): Audit timestamp.
+    The system is optimized for rapid entry, requiring only core data 
+    while intelligently handling optional metadata and category resolution.
     """
 
     TYPE_EXPENSE = 'expense'

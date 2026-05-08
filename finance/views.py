@@ -78,9 +78,12 @@ class CategoryViewSet(OwnerMixin, viewsets.ModelViewSet):
 
 class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
     """
-    ViewSet for logging and viewing financial transactions.
+    API endpoint for managing financial transactions.
     
-    Supports filtering by type, category, and date range.
+    Supports comprehensive CRUD operations with advanced features:
+    - **Intelligent Category Resolution**: Identify categories by ID (`category`) or by plain-text name (`category_name`).
+    - **Flexible Schema**: Minimized mandatory fields to support rapid data entry.
+    - **Advanced Filtering**: Narrow results by type, category, and date range.
     """
 
     queryset = Transaction.objects.all()
@@ -88,16 +91,13 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Apply optional filters based on query parameters.
+        Retrieve and filter transactions for the authenticated user.
         
-        Filters:
-        - type: 'expense' or 'income'
-        - category: ID of the category
-        - date_from: Start date (YYYY-MM-DD)
-        - date_to: End date (YYYY-MM-DD)
-        
-        Returns:
-            QuerySet: Filtered transaction list.
+        Available Filters:
+        - `type`: 'expense' or 'income'
+        - `category`: Numeric ID of the category
+        - `date_from`: ISO date (YYYY-MM-DD)
+        - `date_to`: ISO date (YYYY-MM-DD)
         """
         queryset = super().get_queryset()
         params = self.request.query_params
@@ -126,14 +126,9 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def summary(self, request):
         """
-        Calculate the aggregate financial balance.
+        Aggregate financial totals for the current user.
         
-        Query Parameters:
-            month (int): Filter by month.
-            year (int): Filter by year.
-            
-        Returns:
-            Response: Object containing totals for income, expense, and net balance.
+        Optionally filter by `month` and `year` query parameters to get temporal insights.
         """
         queryset = self.get_queryset()
         month = request.query_params.get('month')

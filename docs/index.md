@@ -1,27 +1,24 @@
 # BudgetWise Backend Documentation
 
-The BudgetWise Backend is a robust financial management system built on the Django REST Framework. It provides a secure and scalable infrastructure for tracking transactions, managing budgets, and generating financial analytics.
+Welcome to the official technical documentation for **BudgetWise**, a premium financial management engine. This system provides a robust, scalable, and secure API infrastructure designed to empower modern personal finance applications.
 
-## Documentation Overview
+## 🚀 Quick Navigation
 
-This documentation provides comprehensive details on the system's architecture, authentication protocols, and core functional modules.
+Explore the core components of the BudgetWise architecture:
 
-### Key Sections
+*   **[Getting Started](setup.md)**: Step-by-step installation and environment setup.
+*   **[Authentication](auth.md)**: Deep dive into our secure session-based protocols.
+*   **[Financial Engine](finance/overview.md)**: Detailed breakdown of Transactions, Categories, and Budgets.
+*   **[Analytics](analytics.md)**: Overview of reporting capabilities and data aggregation.
+*   **[API Reference](reference/finance.md)**: Full technical endpoint specifications.
 
-- [System Installation](setup.md)
-- [Authentication Protocol](auth.md)
-- [Financial Data Management](finance/overview.md)
-- [Analytics and Reporting](analytics.md)
-- [Technical API Reference](reference/finance.md)
+## 💎 Core Capabilities
 
-## Core Capabilities
-
-- **Secure Identity Management**: Implementation of session-based authentication for secure user access.
-- **Transaction Processing**: Comprehensive logging and categorization of financial movements.
-- **Analytical Insights**: Data aggregation and trend analysis for financial oversight.
-- **Budgetary Controls**: Implementation of monthly limits and category-specific spending constraints.
-- **Automated Alerts**: Real-time notification system for budget status and milestones.
+*   **Secure Identity**: Enterprise-grade session management with CSRF protection.
+*   **Simplified Transactions**: Frictionless logging with intelligent category resolution.
+*   **Real-time Analytics**: Instant insights into spending distributions and trends.
+*   **Proactive Controls**: Dynamic budgetary limits with automated status monitoring.
 
 ---
 
-*Base URL:* `https://budget-wise-back-end.vercel.app/`
+**Base API URL:** `https://budget-wise-back-end.vercel.app/`

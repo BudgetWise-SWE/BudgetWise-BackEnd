@@ -41,6 +41,15 @@ For frontend applications, it is mandatory to configure the network client with 
 }
 ```
 
-## Security Controls
+## Security & Cross-Domain Controls
 
-The application enforces Cross-Site Request Forgery (CSRF) protection for state-changing operations. Developers should ensure the `X-CSRFToken` header is properly handled in production environments.
+The application enforces Cross-Site Request Forgery (CSRF) protection for all state-changing operations. 
+
+### Production Cookie Policy (Vercel)
+When hosted on Vercel, the backend implements a strict cookie policy to support cross-domain frontend communication:
+*   **SameSite=None**: Allows cookies to be sent from different frontend domains (e.g., Localhost or Vercel Frontend).
+*   **Secure**: Cookies are only transmitted over HTTPS (Mandatory for Vercel).
+*   **HttpOnly**: Session cookies are inaccessible to client-side scripts to prevent XSS.
+
+> [!IMPORTANT]
+> Ensure your frontend is calling the backend over **HTTPS** in production, otherwise the browser will reject the authentication cookies.

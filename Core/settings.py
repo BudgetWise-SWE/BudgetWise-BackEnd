@@ -175,10 +175,17 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'BudgetWise API',
-    'DESCRIPTION': 'API for BudgetWise, a full-stack personal finance application.',
+    'TITLE': 'BudgetWise Financial Engine API',
+    'DESCRIPTION': 'Enterprise-grade API infrastructure for personal finance management, featuring intelligent transaction tracking, dynamic budgeting, and secure session-based authentication.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'CONTACT': {
+        'name': 'BudgetWise Engineering Team',
+        'url': 'https://github.com/MuhammaddFouadd/BudgetWise-BackEnd',
+    },
+    'LICENSE': {
+        'name': 'MIT License',
+    },
 }
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'

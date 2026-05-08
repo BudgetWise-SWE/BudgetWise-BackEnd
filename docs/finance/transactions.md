@@ -1,32 +1,39 @@
 # Transaction Management
 
-This module facilitates the recording and management of all financial movements within the system.
+The Transaction module is the core of the BudgetWise financial engine, handling all logging and classification of financial movements.
 
-## Transaction Initialization
+## 🚀 Creating Transactions
 
-The system supports a simplified creation process. You can identify a category using either its numeric ID or its display name.
+We support two ways to identify categories. The new **Simplified Method** is recommended for faster frontend development.
 
-### Example: Creation by Category Name (Recommended)
+### Method A: Simplified (Recommended)
+You can identify a category by its plain-text name.
 
 ```json
 {
   "type": "expense",
   "amount": "150.00",
-  "category_name": "Food",
-  "description": "Weekly groceries"
+  "category_name": "Food"
 }
 ```
 
-### Example: Minimum Required Data
+> [!TIP]
+> If you provide a name that doesn't exist, the system will automatically classify it as **"Other"** to prevent data loss.
+
+### Method B: Classic (ID-based)
+Standard identification via the numeric category ID.
 
 ```json
 {
   "type": "income",
   "amount": "5000.00",
-  "category_name": "Salary"
+  "category": 12
 }
 ```
 
-## Data Filtering
+## 📊 Data Insights
 
-The transaction list resource supports advanced filtering parameters, including classification (`type`), taxonomical grouping (`category`), and temporal ranges (`date_from`, `date_to`).
+The transaction list supports advanced filtering:
+*   `type`: Filter by `expense` or `income`.
+*   `category`: Filter by a specific category ID.
+*   `date_from` / `date_to`: Temporal range filtering.
