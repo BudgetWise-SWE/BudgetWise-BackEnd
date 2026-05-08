@@ -271,6 +271,7 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
         model = BudgetCategoryLimit
         fields = ['id', 'budget', 'category', 'category_name', 'month', 'limit', 'spent', 'remaining', 'status']
         read_only_fields = ['status']
+        validators = []  # UniqueConstraint handled in view's create() for upsert logic
 
     def get_spent(self, obj):
         if not hasattr(obj, '_cached_spent'):

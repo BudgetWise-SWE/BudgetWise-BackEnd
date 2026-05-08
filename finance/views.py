@@ -268,10 +268,9 @@ class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
         # Check for existing limit to avoid 400 UniqueConstraint error
         existing_limit = BudgetCategoryLimit.objects.filter(budget=budget, category=category).first()
         if existing_limit:
-            serializer = self.get_serializer(existing_limit, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data)
+            existing_limit.limit = serializer.validated_data.get('limit', existing_limit.limit)
+            existing_limit.save(update_fields=['limit'])
+            return Response(BudgetCategoryLimitSerializer(existing_limit).data)
             
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
