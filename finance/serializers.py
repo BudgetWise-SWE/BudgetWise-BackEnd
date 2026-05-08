@@ -34,6 +34,10 @@ class CategorySerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        """
+        Mark new categories as non-predefined.
+        User assignment is handled by the view's perform_create.
+        """
         validated_data['is_predefined'] = False
         return super().create(validated_data)
 
@@ -124,7 +128,11 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         """
-        Handle amountOfMoney and dataOfTransaction from frontend input.
+        Handle frontend field aliases and typo normalization.
+
+        - Maps amountOfMoney -> amount, dataOfTransaction -> date, name -> description
+        - Converts string category names to category_name for text-based resolution
+        - Normalizes 'Heath' typo to 'Health' for category matching
         """
         if 'amountOfMoney' in data and 'amount' not in data:
             data['amount'] = data['amountOfMoney']
@@ -147,7 +155,13 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """
-        Capitalize 'type' field in response.
+        Format response for frontend compatibility.
+
+        - Capitalizes the 'type' field
+        - Formats date as 'Mon DD, YYYY'
+        - Null-coalesces notes, name, description to empty strings
+        - Returns category name instead of ID
+        - Reverses 'Health' -> 'Heath' to match frontend color map
         """
         representation = super().to_representation(instance)
         if representation.get('type'):
@@ -274,6 +288,12 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
         validators = []  # UniqueConstraint handled in view's create() for upsert logic
 
     def get_spent(self, obj):
+        """
+        Calculate real-time spent amount from transactions for this category/budget period.
+
+        Result is cached on the instance via _cached_spent to avoid redundant
+        queries when both spent and remaining are serialized.
+        """
         if not hasattr(obj, '_cached_spent'):
             from django.db.models import Sum
             from .models import Transaction
@@ -287,6 +307,11 @@ class BudgetCategoryLimitSerializer(serializers.ModelSerializer):
         return obj._cached_spent
 
     def get_remaining(self, obj):
+        """
+        Calculate remaining budget for this category limit.
+
+        Uses the cached spent value from get_spent to avoid extra queries.
+        """
         return max(obj.limit - self.get_spent(obj), 0)
 
     def to_representation(self, instance):

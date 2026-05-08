@@ -216,6 +216,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       tags:
       - api
       security:
@@ -232,9 +234,12 @@ paths:
     post:
       operationId: api_finance_budget_category_limits_create
       description: |-
-        ViewSet for managing granular spending limits within a budget.
+        Create a budget limit with idempotent upsert behavior.
 
-        Allows users to assign specific portions of their total budget to individual categories.
+        If a limit already exists for the same budget+category combination,
+        the limit value is updated instead of raising a duplicate error.
+        Disables DRF's auto-generated unique-together validator to allow
+        the view to handle the upsert logic.
       tags:
       - api
       requestBody:
@@ -265,6 +270,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -289,6 +296,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -325,6 +334,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -360,6 +371,186 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/finance/budget-category-list/:
+    get:
+      operationId: api_finance_budget_category_list_list
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    post:
+      operationId: api_finance_budget_category_list_create
+      description: |-
+        Create a budget limit with idempotent upsert behavior.
+
+        If a limit already exists for the same budget+category combination,
+        the limit value is updated instead of raising a duplicate error.
+        Disables DRF's auto-generated unique-together validator to allow
+        the view to handle the upsert logic.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+  /api/finance/budget-category-list/{id}/:
+    get:
+      operationId: api_finance_budget_category_list_retrieve
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    put:
+      operationId: api_finance_budget_category_list_update
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    patch:
+      operationId: api_finance_budget_category_list_partial_update
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    delete:
+      operationId: api_finance_budget_category_list_destroy
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -381,6 +572,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       tags:
       - api
       security:
@@ -400,6 +592,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       tags:
       - api
       requestBody:
@@ -430,6 +623,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -454,6 +648,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -490,6 +685,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -525,6 +721,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -542,11 +739,7 @@ paths:
   /api/finance/categories/:
     get:
       operationId: api_finance_categories_list
-      description: |-
-        ViewSet for managing transaction categories.
-
-        Allows listing all categories (including global predefined ones)
-        and creating/editing custom user-specific categories.
+      description: Seed default categories if none exist, then return the list.
       tags:
       - api
       security:
@@ -1550,6 +1743,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       tags:
       - finance
       security:
@@ -1566,9 +1761,12 @@ paths:
     post:
       operationId: finance_budget_category_limits_create
       description: |-
-        ViewSet for managing granular spending limits within a budget.
+        Create a budget limit with idempotent upsert behavior.
 
-        Allows users to assign specific portions of their total budget to individual categories.
+        If a limit already exists for the same budget+category combination,
+        the limit value is updated instead of raising a duplicate error.
+        Disables DRF's auto-generated unique-together validator to allow
+        the view to handle the upsert logic.
       tags:
       - finance
       requestBody:
@@ -1599,6 +1797,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -1623,6 +1823,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -1659,6 +1861,8 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -1694,6 +1898,186 @@ paths:
         ViewSet for managing granular spending limits within a budget.
 
         Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /finance/budget-category-list/:
+    get:
+      operationId: finance_budget_category_list_list
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    post:
+      operationId: finance_budget_category_list_create
+      description: |-
+        Create a budget limit with idempotent upsert behavior.
+
+        If a limit already exists for the same budget+category combination,
+        the limit value is updated instead of raising a duplicate error.
+        Disables DRF's auto-generated unique-together validator to allow
+        the view to handle the upsert logic.
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+  /finance/budget-category-list/{id}/:
+    get:
+      operationId: finance_budget_category_list_retrieve
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - finance
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    put:
+      operationId: finance_budget_category_list_update
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BudgetCategoryLimit'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    patch:
+      operationId: finance_budget_category_list_partial_update
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this budget category limit.
+        required: true
+      tags:
+      - finance
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBudgetCategoryLimit'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryLimit'
+          description: ''
+    delete:
+      operationId: finance_budget_category_list_destroy
+      description: |-
+        ViewSet for managing granular spending limits within a budget.
+
+        Allows users to assign specific portions of their total budget to individual categories.
+        Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+        for the get_spent serializer method.
       parameters:
       - in: path
         name: id
@@ -1715,6 +2099,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       tags:
       - finance
       security:
@@ -1734,6 +2119,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       tags:
       - finance
       requestBody:
@@ -1764,6 +2150,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -1788,6 +2175,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -1824,6 +2212,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -1859,6 +2248,7 @@ paths:
         ViewSet for managing overall monthly budgets.
 
         Allows setting the total spending limit for a specific month and year.
+        Uses select_related('user') to avoid N+1 queries when computing the spent property.
       parameters:
       - in: path
         name: id
@@ -1876,11 +2266,7 @@ paths:
   /finance/categories/:
     get:
       operationId: finance_categories_list
-      description: |-
-        ViewSet for managing transaction categories.
-
-        Allows listing all categories (including global predefined ones)
-        and creating/editing custom user-specific categories.
+      description: Seed default categories if none exist, then return the list.
       tags:
       - finance
       security:

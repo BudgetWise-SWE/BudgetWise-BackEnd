@@ -110,10 +110,11 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
         Retrieve and filter transactions for the authenticated user.
         
         Available Filters:
-        - `type`: 'expense' or 'income'
-        - `category`: Numeric ID of the category
+        - `type`: 'expense' or 'income' (also accepts 'credit'/'debit')
+        - `category`: Numeric ID or category name string
         - `date_from`: ISO date (YYYY-MM-DD)
         - `date_to`: ISO date (YYYY-MM-DD)
+        - `search`: Text search against description and notes
         """
         queryset = super().get_queryset()
         params = self.request.query_params
@@ -224,8 +225,9 @@ class TransactionViewSet(OwnerMixin, viewsets.ModelViewSet):
 class BudgetViewSet(OwnerMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing overall monthly budgets.
-    
+
     Allows setting the total spending limit for a specific month and year.
+    Uses select_related('user') to avoid N+1 queries when computing the spent property.
     """
 
     queryset = Budget.objects.select_related('user').all()
@@ -235,14 +237,22 @@ class BudgetViewSet(OwnerMixin, viewsets.ModelViewSet):
 class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing granular spending limits within a budget.
-    
+
     Allows users to assign specific portions of their total budget to individual categories.
+    Uses select_related('budget__user', 'budget', 'category') to prefetch all FK relationships
+    for the get_spent serializer method.
     """
 
     queryset = BudgetCategoryLimit.objects.all()
     serializer_class = BudgetCategoryLimitSerializer
 
     def get_queryset(self):
+        """
+        Return category limits filtered to the current user's budgets.
+
+        Supports optional month filtering via `?month=YYYY-MM` query param.
+        Uses select_related to prefetch budget, budget owner, and category.
+        """
         queryset = BudgetCategoryLimit.objects.filter(
             budget__user=self.request.user
         ).select_related('budget__user', 'budget', 'category')
@@ -257,7 +267,12 @@ class BudgetCategoryLimitViewSet(OwnerMixin, viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Handle creation with idempotency. If a limit for the category/month exists, update it.
+        Create a budget limit with idempotent upsert behavior.
+
+        If a limit already exists for the same budget+category combination,
+        the limit value is updated instead of raising a duplicate error.
+        Disables DRF's auto-generated unique-together validator to allow
+        the view to handle the upsert logic.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

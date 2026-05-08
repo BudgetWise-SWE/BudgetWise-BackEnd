@@ -15,8 +15,8 @@ from django.utils import timezone
 class Category(models.Model):
     """
     Classifies transactions into broad types (e.g., Food, Salary, Rent).
-    
-    Categories are flat-structured for simplicity and speed. They can be 
+
+    Categories are flat-structured for simplicity and speed. They can be
     system-wide (predefined) or custom-created by individual users.
     """
 
@@ -57,8 +57,8 @@ class Category(models.Model):
 class Transaction(models.Model):
     """
     Records an individual financial movement (income or expense).
-    
-    The system is optimized for rapid entry, requiring only core data 
+
+    The system is optimized for rapid entry, requiring only core data
     while intelligently handling optional metadata and category resolution.
     """
 
@@ -88,7 +88,7 @@ class Transaction(models.Model):
     notes = models.TextField(blank=True , null=True)
     source = models.CharField(max_length=100, blank=True , null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         """Metadata for the Transaction model."""
         ordering = ['-date', '-created_at']
@@ -101,7 +101,7 @@ class Transaction(models.Model):
 class Budget(models.Model):
     """
     Defines a user's total spending allowance for a specific month.
-    
+
     Attributes:
         user (ForeignKey): The budget owner.
         name (CharField): Descriptive name (e.g., 'May 2026 Budget').
@@ -151,7 +151,10 @@ class Budget(models.Model):
     def spent(self):
         """
         Calculate total expenses for this budget's month and year.
-        
+
+        Aggregates all expense transactions belonging to the budget owner
+        within the same month/year period.
+
         Returns:
             Decimal: Sum of all expenses in the matching period.
         """
@@ -165,8 +168,11 @@ class Budget(models.Model):
     def update_status(self):
         """
         Evaluate and update the budget status based on current spending.
-        
-        Compares total spent against total_limit and persists the status field.
+
+        Compares total spent against total_limit and persists the status field:
+        - Exceeded: spent > total_limit
+        - Completed: spent == total_limit
+        - Active: spent < total_limit
         """
         spent = self.spent
         if spent > self.total_limit:
@@ -181,12 +187,16 @@ class Budget(models.Model):
 class BudgetCategoryLimit(models.Model):
     """
     Sets a specific spending cap for a single category within a larger budget.
-    
+
+    The `spent` field is a DB-persisted running total updated by BudgetService
+    when expense transactions are created. The `status` field is derived from
+    the consumption ratio (limit vs spent).
+
     Attributes:
         budget (ForeignKey): Parent budget.
         category (ForeignKey): The category to limit.
         limit (Decimal): The capped amount for this category.
-        spent (Decimal): Running total of expenses in this category.
+        spent (Decimal): Running total of expenses in this category (DB-persisted).
         status (str): Standing (Active, Close, Exceeded).
     """
 
@@ -219,17 +229,18 @@ class BudgetCategoryLimit(models.Model):
     def remaining(self):
         """
         Calculate available funds remaining for this category.
-        
+
         Returns:
-            Decimal: Difference between limit and spent.
+            Decimal: Difference between limit and spent (minimum 0).
         """
         return max(self.limit - self.spent, 0)
 
     def update_status(self):
         """
         Evaluate status based on consumption percentage.
-        
+
         'Close' status is triggered at 90% consumption.
+        'Exceeded' when spent surpasses the limit.
         """
         if self.spent > self.limit:
             self.status = self.STATUS_EXCEEDED
@@ -242,7 +253,7 @@ class BudgetCategoryLimit(models.Model):
     def add_spent(self, amount):
         """
         Increase the spent tally and refresh the status.
-        
+
         Args:
             amount (Decimal): Value to add.
         """
@@ -254,7 +265,7 @@ class BudgetCategoryLimit(models.Model):
 class SavingsGoal(models.Model):
     """
     Defines a long-term savings target.
-    
+
     Attributes:
         user (ForeignKey): Goal owner.
         name (CharField): Name of the goal (e.g., 'New Car').
@@ -284,7 +295,7 @@ class SavingsGoal(models.Model):
     def progress(self):
         """
         Calculate the percentage towards the goal.
-        
+
         Returns:
             int: Progress percentage (0-100).
         """
@@ -295,7 +306,7 @@ class SavingsGoal(models.Model):
     def add_contribution(self, amount):
         """
         Log a contribution and check for goal completion.
-        
+
         Args:
             amount (Decimal): Contribution value.
         """

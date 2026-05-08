@@ -2,12 +2,24 @@
 
 The Transaction module is the core of the BudgetWise financial engine, handling all logging and classification of financial movements.
 
-## 🚀 Creating Transactions
+## Endpoints
 
-We support two ways to identify categories. The new **Simplified Method** is recommended for faster frontend development.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/finance/transactions/` | List transactions (with filtering) |
+| POST | `/api/finance/transactions/` | Create a transaction |
+| PATCH | `/api/finance/transactions/{id}/` | Update a transaction |
+| DELETE | `/api/finance/transactions/{id}/` | Delete a transaction |
+| GET | `/api/finance/transactions/summary/` | Aggregated income/expense/balance |
+| GET | `/api/finance/transactions/by_category/` | Spending totals grouped by category |
+
+## Creating Transactions
+
+Two methods are supported for identifying categories.
 
 ### Method A: Simplified (Recommended)
-You can identify a category by its plain-text name.
+
+Identify a category by its plain-text name. If the name doesn't exist, the system **auto-creates** the category on the fly.
 
 ```json
 {
@@ -17,10 +29,8 @@ You can identify a category by its plain-text name.
 }
 ```
 
-> [!TIP]
-> If you provide a name that doesn't exist, the system will automatically classify it as **"Other"** to prevent data loss.
-
 ### Method B: Classic (ID-based)
+
 Standard identification via the numeric category ID.
 
 ```json
@@ -31,9 +41,53 @@ Standard identification via the numeric category ID.
 }
 ```
 
-## 📊 Data Insights
+### Frontend Aliases
 
-The transaction list supports advanced filtering:
-*   `type`: Filter by `expense` or `income`.
-*   `category`: Filter by a specific category ID.
-*   `date_from` / `date_to`: Temporal range filtering.
+The serializer also accepts these alternative field names for frontend compatibility:
+
+| Frontend Field | Maps To | Description |
+|----------------|---------|-------------|
+| `amountOfMoney` | `amount` | Transaction amount |
+| `dataOfTransaction` | `date` | Transaction date |
+| `name` | `description` | Transaction description |
+| `"Heath"` | `"Health"` | Category name typo normalization |
+
+## Filtering
+
+The transaction list supports these query parameters:
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `type` | str | `expense`, `income`, `credit`, or `debit` |
+| `category` | int/str | Category ID or name |
+| `date_from` | str | Start date (YYYY-MM-DD) |
+| `date_to` | str | End date (YYYY-MM-DD) |
+| `search` | str | Text search in description and notes |
+
+## Summary Endpoint
+
+`GET /api/finance/transactions/summary/?month=5&year=2026`
+
+Returns:
+```json
+{
+  "total_income": 5000.00,
+  "total_expenses": 3200.00,
+  "total_balance": 1800.00,
+  "total_transactions": 42,
+  "recent_transactions": [...]
+}
+```
+
+## By Category Endpoint
+
+`GET /api/finance/transactions/by_category/?month=5&year=2026`
+
+Returns spending totals aggregated by category, ordered by total descending.
+
+## Budget Integration
+
+When an expense transaction is created, the system automatically:
+1. Finds the matching monthly budget and category limit
+2. Increments the limit's `spent` counter
+3. Recalculates both the category limit and budget statuses
